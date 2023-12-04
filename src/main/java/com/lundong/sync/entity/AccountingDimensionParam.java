@@ -10,9 +10,9 @@ import lombok.Data;
 public class AccountingDimensionParam {
 
     /**
-     * 借方核算维度1（拆分&）
+     * 核算维度（拆分&）
      */
-    private String debitAccountingDimensionOne;
+    private String accountingDimension;
 
     /**
      * 所属品牌（能查到店铺和新业务组）

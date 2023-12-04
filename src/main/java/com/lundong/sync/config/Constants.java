@@ -1,6 +1,7 @@
 package com.lundong.sync.config;
 
 import com.lundong.sync.entity.base.*;
+import com.lundong.sync.entity.bitable.SecondExceptionTable;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 import java.util.List;
@@ -100,6 +101,26 @@ public class Constants {
     // 部门信息
     public static final String TABLE_07 = "tblZU5IZQPwemJVp";
     public static List<Department> LIST_TABLE_07;
+
+    // 付款申请&个人报销（第二张生成例外表）
+    public static final String TABLE_08 = "tbliEaxNEOl3v0IM";
+    public static List<SecondExceptionTable> LIST_TABLE_08;
+
+    // 付款申请第二张（逻辑1映射表）
+    public static final String TABLE_09 = "tblBbzwF3J7jrBC7";
+    public static List<Bitable> LIST_TABLE_09;
+
+    // 付款申请第二张（逻辑2映射表）
+    public static final String TABLE_10 = "tbliEaxNEOl3v0IM";
+    public static List<Bitable> LIST_TABLE_10;
+
+    // 付款申请第二张（逻辑3映射表）
+    public static final String TABLE_11 = "tbluUy9ueZNK3c8w";
+    public static List<Bitable> LIST_TABLE_11;
+
+    // 付款申请第二张（逻辑4映射表）
+    public static final String TABLE_12 = "tblXHJKgK4JHGcCT";
+    public static List<Bitable> LIST_TABLE_12;
 
     // 多维表格生成凭证 多维表格APP_TOKEN
     public static final String APP_TOKEN_BITABLE = "";

@@ -10,9 +10,12 @@ import lombok.Data;
 @Data
 public class Department {
 
+    @JSONField(name = "飞书部门")
+    private String feishuDepartmentName;
+
     @JSONField(name = "部门编码")
     private String departmentCode;
 
-    @JSONField(name = "部门名称")
+    @JSONField(name = "金蝶部门")
     private String departmentName;
 }

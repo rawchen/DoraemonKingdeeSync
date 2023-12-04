@@ -1,6 +1,7 @@
 package com.lundong.sync.entity.bitable;
 
 import com.alibaba.fastjson.annotation.JSONField;
+import lombok.Data;
 
 /**
  * 付款申请&个人报销（第二张生成例外表）
@@ -8,6 +9,7 @@ import com.alibaba.fastjson.annotation.JSONField;
  * @author shuangquan.chen
  * @date 2023-11-29 15:40
  */
+@Data
 public class SecondExceptionTable {
 
     @JSONField(name = "费用子类")

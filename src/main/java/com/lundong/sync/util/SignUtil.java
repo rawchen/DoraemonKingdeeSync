@@ -37,7 +37,6 @@ public class SignUtil {
         object.put("app_secret", appSecret);
         String resultStr = HttpRequest.post("https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal")
                 .form(object)
-                .timeout(2000)
                 .execute().body();
         if (StringUtils.isNotEmpty(resultStr)) {
             JSONObject resultObject = (JSONObject) JSON.parse(resultStr);
@@ -114,7 +113,6 @@ public class SignUtil {
             String resultStr = HttpRequest.get("https://open.feishu.cn/open-apis/approval/v4/instances/" + instanceId)
                     .header("Authorization", "Bearer " + accessToken)
                     .form(object)
-                    .timeout(2000)
                     .execute().body();
             log.info("获取单个审批实例详情接口: {}", resultStr);
             if (StringUtils.isNotEmpty(resultStr)) {
@@ -165,6 +163,10 @@ public class SignUtil {
                 log.info("列出记录接口: {}", resultStr);
                 Thread.sleep(500L);
                 JSONObject jsonObject = JSON.parseObject(resultStr);
+                if (jsonObject.getInteger("code") != 0) {
+                    log.error("列出记录接口调用失败");
+                    return Collections.emptyList();
+                }
                 JSONObject data = (JSONObject) jsonObject.get("data");
                 JSONArray items = (JSONArray) data.get("items");
                 for (int i = 0; i < items.size(); i++) {
@@ -180,7 +182,7 @@ public class SignUtil {
                 }
             }
         } catch (Exception e) {
-            log.info("获取子部门列表飞书接口调用异常", e);
+            log.info("列出记录接口调用异常", e);
             return Collections.emptyList();
         }
         return results;
@@ -254,11 +256,23 @@ public class SignUtil {
             return null;
         }
         for (VoucherDetail voucherDetail : voucher.getVoucherDetails()) {
+            if (voucherDetail.getDebit() == null) {
+                voucherDetail.setDebit("0");
+            }
+            if (voucherDetail.getCredit() == null) {
+                voucherDetail.setCredit("0");
+            }
+            if (voucherDetail.getAmountFor() == null) {
+                voucherDetail.setAmountFor("0");
+            }
+
+            StringUtil.replaceNullFieldToEmpty(voucher.getVoucherDetails());
+
             String detail = "{\"FEntryID\":0,\"FEXPLANATION\":\"摘要文本\",\"FACCOUNTID\":{\"FNumber\":\"科目编码文本\"}," +
                     "\"FDetailID\":{\"FDETAILID__FFLEX10\":{\"FNumber\":\"\"},\"FDETAILID__FFLEX4\":{\"FNumber\":\"\"},\"FDETAILID__FF100002\":{\"FNumber\":\"\"}}," +
                     "\"FCURRENCYID\":{\"FNumber\":\"币别文本\"},\"FEXCHANGERATETYPE\":{\"FNumber\":\"汇率类型文本\"}," +
                     "\"FEXCHANGERATE\":1,\"FUnitId\":{\"FNUMBER\":\"\"},\"FPrice\":0,\"FQty\":0," +
-                    "\"FAMOUNTFOR\":1000,\"FDEBIT\":借方金额文本,\"FCREDIT\":贷方金额文本,\"FSettleTypeID\":{\"FNumber\":\"\"}," +
+                    "\"FAMOUNTFOR\":原币金额文本,\"FDEBIT\":借方金额文本,\"FCREDIT\":贷方金额文本,\"FSettleTypeID\":{\"FNumber\":\"\"}," +
                     "\"FSETTLENO\":\"\",\"FBUSNO\":\"\",\"FEXPORTENTRYID\":0,\"FDetailID\": {" +
                     "\"FDETAILID__FFLEX10\": {\"FNumber\": \"核算维度10\"},\"FDETAILID__FFLEX4\": {\"FNumber\": \"核算维度4\"}," +
                     "\"FDETAILID__FFLEX5\": {\"FNumber\": \"核算维度5\"},\"FDETAILID__FFLEX9\": {\"FNumber\": \"核算维度9\"}," +
@@ -273,6 +287,7 @@ public class SignUtil {
             detail = detail.replace("汇率类型文本", ExchangeRateTypeEnum.HLTX01_SYS.getType());
             detail = detail.replace("借方金额文本", voucherDetail.getDebit());
             detail = detail.replace("贷方金额文本", voucherDetail.getCredit());
+            detail = detail.replace("原币金额文本", voucherDetail.getAmountFor());
             detail = detail.replace("核算维度10", StringUtil.nullIsEmpty(voucherDetail.getAccountingDimension().getFflex10()));
             detail = detail.replace("核算维度4", StringUtil.nullIsEmpty(voucherDetail.getAccountingDimension().getFflex4()));
             detail = detail.replace("核算维度5", StringUtil.nullIsEmpty(voucherDetail.getAccountingDimension().getFflex5()));

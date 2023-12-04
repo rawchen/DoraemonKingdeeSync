@@ -40,6 +40,11 @@ public class VoucherDetail {
     private String credit;
 
     /**
+     * 原币金额
+     */
+    private String amountFor;
+
+    /**
      * 核算维度
      */
     private AccountingDimension accountingDimension;

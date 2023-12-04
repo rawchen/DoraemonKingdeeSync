@@ -9,9 +9,12 @@ import com.lundong.sync.entity.approval.ApprovalInstanceForm;
 import com.lundong.sync.entity.approval.DepartmentValue;
 import com.lundong.sync.entity.base.Account;
 import com.lundong.sync.entity.kingdee.AccountingDimension;
+import com.lundong.sync.entity.kingdee.VoucherDetail;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -190,9 +193,50 @@ public class StringUtil {
         return "";
     }
 
-    public static AccountingDimension getEmptyAccountingDimension() {
-        AccountingDimension accountingDimension = new AccountingDimension();
-        setFieldEmpty(accountingDimension);
-        return accountingDimension;
+    public static String calculateIncludeTax(String amount, String taxRate) {
+        if (StrUtil.isEmpty(taxRate) || StrUtil.isEmpty(amount)) {
+            log.error("税率或金额为空");
+            return "0";
+        } else {
+            BigDecimal amountBigDecimal = new BigDecimal(amount);
+            if (taxRate.endsWith("%")) {
+                taxRate = taxRate.substring(0, taxRate.length() - 1);
+            }
+            // 类型转换后计算 金额/(1+税率)
+            BigDecimal percentTaxRate = new BigDecimal(taxRate);
+            BigDecimal divide = percentTaxRate.divide(new BigDecimal("100"));
+            BigDecimal add = divide.add(new BigDecimal("1"));
+            BigDecimal result = amountBigDecimal.divide(add, 2, RoundingMode.HALF_UP);
+            return result.toString();
+        }
+    }
+
+    public static String calculateIncludeTaxTwo(String amount, String taxRate) {
+        if (StrUtil.isEmpty(taxRate) || StrUtil.isEmpty(amount)) {
+            log.error("税率或金额为空");
+            return "0";
+        } else {
+            BigDecimal amountBigDecimal = new BigDecimal(amount);
+            if (taxRate.endsWith("%")) {
+                taxRate = taxRate.substring(0, taxRate.length() - 1);
+            }
+            // 类型转换后计算 金额/(1+税率)*税率
+            BigDecimal percentTaxRate = new BigDecimal(taxRate);
+            BigDecimal divide = percentTaxRate.divide(new BigDecimal("100"));
+            BigDecimal add = divide.add(new BigDecimal("1"));
+
+            BigDecimal result = amountBigDecimal.divide(add, 5, RoundingMode.HALF_UP);
+            BigDecimal multiply = result.multiply(divide);
+            return multiply.divide(BigDecimal.ONE, 2, RoundingMode.HALF_UP) .toString();
+        }
+    }
+
+    public static void replaceNullFieldToEmpty(List<VoucherDetail> voucherDetails) {
+        for (VoucherDetail voucherDetail : voucherDetails) {
+            if (voucherDetail.getAccountingDimension() == null) {
+                voucherDetail.setAccountingDimension(new AccountingDimension());
+            }
+            setFieldEmpty(voucherDetail.getAccountingDimension());
+        }
     }
 }

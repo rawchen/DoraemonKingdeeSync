@@ -7,6 +7,7 @@ import com.lundong.sync.config.Constants;
 import com.lundong.sync.entity.AccountingDimensionParam;
 import com.lundong.sync.entity.approval.ApprovalInstanceForm;
 import com.lundong.sync.entity.base.*;
+import com.lundong.sync.entity.bitable.SecondExceptionTable;
 import com.lundong.sync.entity.kingdee.AccountingDimension;
 import com.lundong.sync.entity.kingdee.Voucher;
 import com.lundong.sync.entity.kingdee.VoucherDetail;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -117,7 +119,7 @@ public class SystemServiceImpl implements SystemService {
                             // 根据借方核算维度文本转核算维度实体（赋好字段代码）
                             String debitAccountingDimensionOne = bitableList.get(0).getDebitAccountingDimensionOne();
                             AccountingDimensionParam accountingDimensionParam = new AccountingDimensionParam();
-                            accountingDimensionParam.setDebitAccountingDimensionOne(debitAccountingDimensionOne);
+                            accountingDimensionParam.setAccountingDimension(debitAccountingDimensionOne);
                             accountingDimensionParam.setBrand(StringUtil.getValueByName(formDetails, "所属品牌"));
                             accountingDimensionParam.setDepartment(StringUtil.getDepartmentName(forms, "部门"));
                             accountingDimensionParam.setEmployee(employeeName);
@@ -126,7 +128,6 @@ public class SystemServiceImpl implements SystemService {
                             j.setAccountingDimension(accountingDimension);
                         }
                         j.setDebit(StringUtil.getValueByName(formDetails, "金额"));
-                        j.setCredit("0");
                         voucherDetails.add(j);
                     }
                     // 以上为通过明细获取的多个借方，以下为一个贷方
@@ -140,12 +141,122 @@ public class SystemServiceImpl implements SystemService {
                         d.setExplanation(voucherDetails.get(0).getExplanation());
                     }
                     d.setAccountId(StringUtil.getAccountCode(forms, "付款银行"));
-                    d.setAccountingDimension(StringUtil.getEmptyAccountingDimension());
-                    d.setDebit("0");
                     d.setCredit(StringUtil.getValueByName(forms, "金额汇总"));
                     voucherDetails.add(d);
                     voucher.setVoucherDetails(voucherDetails);
                     SignUtil.saveVoucher(voucher);
+
+
+                    // 第二张生成逻辑
+                    Voucher voucherTwo = new Voucher();
+                    voucherTwo.setDate(year + "-" + month + "-" + day);
+                    voucherTwo.setVoucherGroupId(VoucherGroupIdEnum.PRE004.getType());
+                    List<VoucherDetail> voucherTwoDetails = new ArrayList<>();
+                    // 判断子类是否属于以下项
+                    for (List<ApprovalInstanceForm> formDetails : formListDetails) {
+                        String costSubcategory = StringUtil.getValueByName(formDetails, "费用子类");
+                        List<SecondExceptionTable> secondExceptionTables = Constants.LIST_TABLE_08;
+                        List<String> secondExceptionTableStringList = secondExceptionTables.stream().map(SecondExceptionTable::getCostSubcategory).collect(Collectors.toList());
+                        List<Bitable> listTable = Collections.emptyList();
+                        int genLogicType = 0;
+                        if (secondExceptionTableStringList.contains(costSubcategory)) {
+                            // 包含子类且固定资产/长期待摊
+                            if ("是".equals(StringUtil.getValueByName(formDetails, "固定资产/长期待摊"))) {
+                                // 跳过该明细的借贷凭证列表
+                                break;
+                            }
+                        } else {
+                            String summary = StringUtil.getValueByName(formDetails, "品牌是否核销");
+                            String isTicketArrived = StringUtil.getValueByName(formDetails, "是否已到票");
+                            // 判断品牌是否核销
+                            if ("是".equals(summary)) {
+                                // 判断是否到票
+                                if ("是".equals(isTicketArrived)) {
+                                    listTable = Constants.LIST_TABLE_09;
+                                    genLogicType = 1;
+                                } else {
+                                    listTable = Constants.LIST_TABLE_10;
+                                    genLogicType = 2;
+                                }
+                            } else {
+                                if ("是".equals(isTicketArrived)) {
+                                    listTable = Constants.LIST_TABLE_11;
+                                    genLogicType = 3;
+                                } else {
+                                    listTable = Constants.LIST_TABLE_12;
+                                    genLogicType = 4;
+                                }
+                            }
+                        }
+                        String brandType;
+                        if (!"总体管理".equals(StringUtil.getValueByName(formDetails, "所属品牌"))) {
+                            brandType = "Other";
+                        } else {
+                            brandType = "总体管理";
+                        }
+                        Bitable bitable;
+                        List<Bitable> bitableList = listTable.stream().filter(n -> StringUtil.getValueByName(formDetails, "费用大类").equals(n.getCostCategory())
+                                && StringUtil.getValueByName(formDetails, "费用子类").equals(n.getCostSubcategory())
+                                && brandType.equals(n.getBrand())
+                        ).collect(Collectors.toList());
+
+                        if (ArrayUtil.isEmpty(bitableList) || bitableList.size() > 1) {
+                            log.error("存在争议的科目编码，请检查参数是否在映射表匹配。费用大类：{} 费用子类：{} 所属品牌：{}",
+                                    StringUtil.getValueByName(formDetails, "费用大类"), StringUtil.getValueByName(formDetails, "费用子类"), StringUtil.getValueByName(formDetails, "所属品牌"));
+                            return;
+                        } else {
+                            bitable = bitableList.get(0);
+                            String summary = bitable.getSummary();
+                            // 摘要为空跳过该明细的借贷凭证列表
+                            if (StrUtil.isEmpty(summary)) {
+                                break;
+                            }
+                        }
+
+                        VoucherDetail j1 = new VoucherDetail();
+                        VoucherDetail j2 = new VoucherDetail();
+                        VoucherDetail d1 = new VoucherDetail();
+                        String explanation = (genLogicType == 2 ? "暂估成本" : "确认成本") +
+                                "&" + StringUtil.getValueByName(forms, "收款人（单位）全称") +
+                                "&" + StringUtil.getValueByName(formDetails, "所属品牌") +
+                                "&" + StringUtil.getValueByName(formDetails, "费用归属年份") + StringUtil.getValueByName(formDetails, "费用归属月份") +
+                                "&" + serialNumber +
+                                "&" + StringUtil.getValueByName(formDetails, "费用大类") +
+                                "&" + StringUtil.getValueByName(formDetails, "费用子类") + (genLogicType == 1 || genLogicType == 2 ? "&品牌核销" : "") +
+                                "&" + StringUtil.getValueByName(formDetails, "备注");
+                        j1.setExplanation(explanation);
+                        j2.setExplanation(explanation);
+                        d1.setExplanation(explanation);
+
+                        j1.setAmountFor(StringUtil.getValueByName(formDetails, "金额"));
+                        String debitAmount = StringUtil.calculateIncludeTax(StringUtil.getValueByName(formDetails, "金额"), StringUtil.getValueByName(formDetails, "税率"));
+                        j1.setDebit(debitAmount);
+                        String debitAmountTwo = StringUtil.calculateIncludeTaxTwo(StringUtil.getValueByName(formDetails, "金额"), StringUtil.getValueByName(formDetails, "税率"));
+                        j2.setDebit(debitAmountTwo);
+                        d1.setCredit(StringUtil.getValueByName(formDetails, "金额"));
+
+                        // 借贷方科目编码名称维度组装
+                        j1.setAccountId(bitable.getDebitAccountCodeOne());
+                        String debitAccountingDimensionOne = bitable.getDebitAccountingDimensionOne();
+                        VoucherDetail voucherDetailDebitOne = getAccountingDimensionParam(forms, employeeName, formDetails, j1, debitAccountingDimensionOne);
+                        voucherTwoDetails.add(voucherDetailDebitOne);
+                        // 判断是否有第二张借（因为到票所以产生税金）
+                        if (bitable.getDebitAccountCodeTwo() != null) { // 等同于 genLogicType == 1 || genLogicType == 3
+                            j2.setAccountId(bitable.getDebitAccountCodeTwo());
+                            String debitAccountingDimensionTwo = bitable.getDebitAccountingDimensionTwo();
+                            VoucherDetail voucherDetailDebitTwo = getAccountingDimensionParam(forms, employeeName, formDetails, j2, debitAccountingDimensionTwo);
+                            voucherTwoDetails.add(voucherDetailDebitTwo);
+                        }
+                        d1.setAccountId(bitable.getCreditAccountCodeOne());
+                        String creditAccountingDimensionOne = bitable.getCreditAccountingDimensionOne();
+                        VoucherDetail voucherDetailCreditOne = getAccountingDimensionParam(forms, employeeName, formDetails, d1, creditAccountingDimensionOne);
+                        voucherTwoDetails.add(voucherDetailCreditOne);
+                    }
+
+                    if (!voucherTwoDetails.isEmpty()) {
+                        voucherTwo.setVoucherDetails(voucherTwoDetails);
+                        SignUtil.saveVoucher(voucherTwo);
+                    }
                 } else if ("个人报销".equals(approvalTypeName)) {
 
                 } else if ("预付申请".equals(approvalTypeName)) {
@@ -153,14 +264,41 @@ public class SystemServiceImpl implements SystemService {
                 }
                 break;
             case INVOICING_APPLICATION:
+                // 开票申请
                 break;
             case INVOICE_WRITE_OFF:
+                // 发票核销
                 break;
             case WITHHOLDING_APPLICATION:
+                // 预提申请
                 break;
             case REFUND_APPLICATION:
+                // 退款申请
                 break;
         }
+    }
+
+    /**
+     * 组装核算维度参数
+     *
+     * @param forms                         审批实例表单列表
+     * @param employeeName                  员工姓名
+     * @param formDetails                   审批实例表单明细列表
+     * @param voucherDetail                 金蝶凭证明细详情
+     * @param accountingDimension           核算维度文本
+     */
+    private VoucherDetail getAccountingDimensionParam(List<ApprovalInstanceForm> forms, String employeeName,
+                                             List<ApprovalInstanceForm> formDetails, VoucherDetail voucherDetail,
+                                             String accountingDimension) {
+        AccountingDimensionParam param = new AccountingDimensionParam();
+        param.setAccountingDimension(accountingDimension);
+        param.setBrand(StringUtil.getValueByName(formDetails, "所属品牌"));
+        param.setDepartment(StringUtil.getDepartmentName(forms, "部门"));
+        param.setEmployee(employeeName);
+        param.setSupplierOrCustomName(StringUtil.getValueByName(forms, "收款人（单位）全称"));
+        AccountingDimension accountingDimensionDebitTwo = getAccountingDimension(param);
+        voucherDetail.setAccountingDimension(accountingDimensionDebitTwo);
+        return voucherDetail;
     }
 
     /**
@@ -173,12 +311,11 @@ public class SystemServiceImpl implements SystemService {
         AccountingDimension accountingDimension = new AccountingDimension();
 
         List<BrandShopBusiness> baseList = Constants.LIST_TABLE_02;
-        if (StrUtil.isEmpty(accountingDimensionParam.getDebitAccountingDimensionOne())) {
-            log.error("查找核算维度映射编码时借方核算维度1为空");
+        if (StrUtil.isEmpty(accountingDimensionParam.getAccountingDimension())) {
             return new AccountingDimension();
         }
         // 分割&品牌
-        String[] accountingDimensionArr = accountingDimensionParam.getDebitAccountingDimensionOne().split("&");
+        String[] accountingDimensionArr = accountingDimensionParam.getAccountingDimension().split("&");
         // 遍历核算维度
         for (String s : accountingDimensionArr) {
             if ("店铺".equals(s) || "新业务组".equals(s)) {
@@ -221,7 +358,7 @@ public class SystemServiceImpl implements SystemService {
             } else if ("部门".equals(s)) {
                 List<Department> departments = Constants.LIST_TABLE_07;
                 for (Department department : departments) {
-                    if (accountingDimensionParam.getDepartment().equals(department.getDepartmentName())) {
+                    if (accountingDimensionParam.getDepartment().equals(department.getFeishuDepartmentName())) {
                         accountingDimension.setFflex5(department.getDepartmentCode());
                         break;
                     }
