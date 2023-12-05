@@ -95,14 +95,7 @@ public class SystemServiceImpl implements SystemService {
                             // 映射借方核算维度1
                             // 根据借方核算维度文本转核算维度实体（赋好字段代码）
                             String debitAccountingDimensionOne = bitableList.get(0).getDebitAccountingDimensionOne();
-                            AccountingDimensionParam accountingDimensionParam = new AccountingDimensionParam();
-                            accountingDimensionParam.setAccountingDimension(debitAccountingDimensionOne);
-                            accountingDimensionParam.setBrand(StringUtil.getValueByName(formDetails, "所属品牌"));
-                            accountingDimensionParam.setDepartment(StringUtil.getDepartmentName(forms, "部门"));
-                            accountingDimensionParam.setEmployee(employeeName);
-                            accountingDimensionParam.setSupplierOrCustomName(StringUtil.getValueByName(forms, "收款人（单位）全称"));
-                            AccountingDimension accountingDimension = getAccountingDimension(accountingDimensionParam);
-                            j.setAccountingDimension(accountingDimension);
+                            getAccountingDimensionParam(forms, employeeName, formDetails, j, debitAccountingDimensionOne);
                         }
                         j.setDebit(StringUtil.getValueByName(formDetails, "金额"));
                         voucherDetails.add(j);
