@@ -1,6 +1,5 @@
 package com.lundong.sync.service.impl;
 
-import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.lundong.sync.config.Constants;
@@ -14,6 +13,7 @@ import com.lundong.sync.entity.kingdee.VoucherDetail;
 import com.lundong.sync.enums.DataTypeEnum;
 import com.lundong.sync.enums.VoucherGroupIdEnum;
 import com.lundong.sync.service.SystemService;
+import com.lundong.sync.util.ArrayUtil;
 import com.lundong.sync.util.SignUtil;
 import com.lundong.sync.util.StringUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -71,31 +70,8 @@ public class SystemServiceImpl implements SystemService {
                     }
                     for (List<ApprovalInstanceForm> formDetails : formListDetails) {
                         VoucherDetail j = new VoucherDetail();
-                        // 摘要（判断品牌是否核销）
-                        String summary = StringUtil.getValueByName(formDetails, "品牌是否核销");
-                        String explanation = "";
-                        if ("是".equals(summary)) {
-                            // 申请类别&收款人（单位）全称&所属品牌&费用归属年份费用归属月份&飞书流程号&费用大类&费用子类&品牌核销&备注
-                            explanation = "付款申请" +
-                                    "&" + StringUtil.getValueByName(forms, "收款人（单位）全称") +
-                                    "&" + StringUtil.getValueByName(formDetails, "所属品牌") +
-                                    "&" + StringUtil.getValueByName(formDetails, "费用归属年份") + StringUtil.getValueByName(formDetails, "费用归属月份") +
-                                    "&" + serialNumber +
-                                    "&" + StringUtil.getValueByName(formDetails, "费用大类") +
-                                    "&" + StringUtil.getValueByName(formDetails, "费用子类") +
-                                    "&" + "品牌核销" +
-                                    "&" + StringUtil.getValueByName(formDetails, "备注");
-                        } else if ("否".equals(summary)) {
-                            // 申请类别&收款人(单位)名称&所属品牌&费用归属年份费用归属月份&飞书流程号&费用大类&费用子类&备注
-                            explanation = "付款申请" +
-                                    "&" + StringUtil.getValueByName(forms, "收款人（单位）全称") +
-                                    "&" + StringUtil.getValueByName(formDetails, "所属品牌") +
-                                    "&" + StringUtil.getValueByName(formDetails, "费用归属年份") + StringUtil.getValueByName(formDetails, "费用归属月份") +
-                                    "&" + serialNumber +
-                                    "&" + StringUtil.getValueByName(formDetails, "费用大类") +
-                                    "&" + StringUtil.getValueByName(formDetails, "费用子类") +
-                                    "&" + StringUtil.getValueByName(formDetails, "备注");
-                        }
+                        // 摘要（根据品牌是否核销不同）
+                        String explanation = StringUtil.getExplanationName("付款申请", serialNumber, forms, formDetails);
                         j.setExplanation(explanation);
 
                         // 科目编码
@@ -110,6 +86,7 @@ public class SystemServiceImpl implements SystemService {
                                 && StringUtil.getValueByName(formDetails, "费用子类").equals(n.getCostSubcategory())
                                 && brandType.equals(n.getBrand())
                         ).collect(Collectors.toList());
+                        System.out.println(bitableList.size());
                         if (ArrayUtil.isEmpty(bitableList) || bitableList.size() > 1) {
                             log.error("存在争议的科目编码，请检查参数是否在映射表匹配。费用大类：{} 费用子类：{} 所属品牌：{}",
                                     StringUtil.getValueByName(formDetails, "费用大类"), StringUtil.getValueByName(formDetails, "费用子类"), StringUtil.getValueByName(formDetails, "所属品牌"));
@@ -157,14 +134,12 @@ public class SystemServiceImpl implements SystemService {
                         String costSubcategory = StringUtil.getValueByName(formDetails, "费用子类");
                         List<SecondExceptionTable> secondExceptionTables = Constants.LIST_TABLE_08;
                         List<String> secondExceptionTableStringList = secondExceptionTables.stream().map(SecondExceptionTable::getCostSubcategory).collect(Collectors.toList());
-                        List<Bitable> listTable = Collections.emptyList();
-                        int genLogicType = 0;
-                        if (secondExceptionTableStringList.contains(costSubcategory)) {
-                            // 包含子类且固定资产/长期待摊
-                            if ("是".equals(StringUtil.getValueByName(formDetails, "固定资产/长期待摊"))) {
-                                // 跳过该明细的借贷凭证列表
-                                break;
-                            }
+                        List<Bitable> listTable;
+                        int genLogicType;
+                        // 包含子类且固定资产/长期待摊
+                        if (secondExceptionTableStringList.contains(costSubcategory) && "是".equals(StringUtil.getValueByName(formDetails, "固定资产/长期待摊"))) {
+                            // 跳过该明细的借贷凭证列表
+                            continue;
                         } else {
                             String summary = StringUtil.getValueByName(formDetails, "品牌是否核销");
                             String isTicketArrived = StringUtil.getValueByName(formDetails, "是否已到票");
@@ -199,7 +174,8 @@ public class SystemServiceImpl implements SystemService {
                                 && StringUtil.getValueByName(formDetails, "费用子类").equals(n.getCostSubcategory())
                                 && brandType.equals(n.getBrand())
                         ).collect(Collectors.toList());
-
+                        System.out.println(bitableList);
+                        System.out.println(bitableList.size());
                         if (ArrayUtil.isEmpty(bitableList) || bitableList.size() > 1) {
                             log.error("存在争议的科目编码，请检查参数是否在映射表匹配。费用大类：{} 费用子类：{} 所属品牌：{}",
                                     StringUtil.getValueByName(formDetails, "费用大类"), StringUtil.getValueByName(formDetails, "费用子类"), StringUtil.getValueByName(formDetails, "所属品牌"));
@@ -209,7 +185,7 @@ public class SystemServiceImpl implements SystemService {
                             String summary = bitable.getSummary();
                             // 摘要为空跳过该明细的借贷凭证列表
                             if (StrUtil.isEmpty(summary)) {
-                                break;
+                                continue;
                             }
                         }
 
@@ -246,6 +222,8 @@ public class SystemServiceImpl implements SystemService {
                             String debitAccountingDimensionTwo = bitable.getDebitAccountingDimensionTwo();
                             VoucherDetail voucherDetailDebitTwo = getAccountingDimensionParam(forms, employeeName, formDetails, j2, debitAccountingDimensionTwo);
                             voucherTwoDetails.add(voucherDetailDebitTwo);
+                        } else {
+                            j1.setDebit(StringUtil.getValueByName(formDetails, "金额"));
                         }
                         d1.setAccountId(bitable.getCreditAccountCodeOne());
                         String creditAccountingDimensionOne = bitable.getCreditAccountingDimensionOne();

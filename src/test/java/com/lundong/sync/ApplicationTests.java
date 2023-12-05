@@ -1,11 +1,14 @@
 package com.lundong.sync;
 
+import cn.hutool.core.util.ArrayUtil;
+import com.lundong.sync.entity.base.Bitable;
 import com.lundong.sync.entity.bitable.PaymentRequestOne;
 import com.lundong.sync.entity.kingdee.AccountingDimension;
 import com.lundong.sync.entity.kingdee.Voucher;
 import com.lundong.sync.entity.kingdee.VoucherDetail;
 import com.lundong.sync.service.SystemService;
 import com.lundong.sync.util.SignUtil;
+import com.lundong.sync.util.StringUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,6 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.lang.reflect.Field;
 import java.net.HttpCookie;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @SpringBootTest
@@ -93,5 +97,20 @@ class ApplicationTests {
             System.out.println(e.getMessage());
         }
         System.out.println(accountingDimension);
+    }
+
+    @Test
+    void t06() {
+        Bitable bitable = new Bitable();
+        bitable.setCostCategory("123");
+        bitable.setCostSubcategory("567（）789");
+        StringUtil.bracketReplace(bitable);
+        System.out.println(bitable);
+    }
+
+    @Test
+    void t07() {
+        List<Bitable> bitables = Collections.emptyList();
+        System.out.println(ArrayUtil.isEmpty(bitables));
     }
 }

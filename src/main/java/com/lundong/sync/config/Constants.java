@@ -111,7 +111,7 @@ public class Constants {
     public static List<Bitable> LIST_TABLE_09;
 
     // 付款申请第二张（逻辑2映射表）
-    public static final String TABLE_10 = "tbliEaxNEOl3v0IM";
+    public static final String TABLE_10 = "tblg4fQUZoYl0uu1";
     public static List<Bitable> LIST_TABLE_10;
 
     // 付款申请第二张（逻辑3映射表）

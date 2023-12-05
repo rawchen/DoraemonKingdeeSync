@@ -1,6 +1,5 @@
 package com.lundong.sync.util;
 
-import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.lundong.sync.config.Constants;
@@ -62,6 +61,15 @@ public class StringUtil {
     public static String getValueByName(List<ApprovalInstanceForm> forms, String name) {
         for (ApprovalInstanceForm form : forms) {
             if (name.equals(form.getName())) {
+                // 审批表单取值时统一使用英文括号问题
+                if (!StrUtil.isEmpty(form.getValue())) {
+                    if (form.getValue().contains("（")) {
+                        form.setValue(form.getValue().replaceAll("（", "("));
+                    }
+                    if (form.getValue().contains("）")) {
+                        form.setValue(form.getValue().replaceAll("）", ")"));
+                    }
+                }
                 return form.getValue();
             }
         }
@@ -227,7 +235,7 @@ public class StringUtil {
 
             BigDecimal result = amountBigDecimal.divide(add, 5, RoundingMode.HALF_UP);
             BigDecimal multiply = result.multiply(divide);
-            return multiply.divide(BigDecimal.ONE, 2, RoundingMode.HALF_UP) .toString();
+            return multiply.divide(BigDecimal.ONE, 2, RoundingMode.HALF_UP).toString();
         }
     }
 
@@ -238,5 +246,55 @@ public class StringUtil {
             }
             setFieldEmpty(voucherDetail.getAccountingDimension());
         }
+    }
+
+    public static <T> void bracketReplace(T testEntity) {
+        try {
+            Class<?> clazz = testEntity.getClass();
+            Field[] fields = clazz.getDeclaredFields();
+
+            for (Field field : fields) {
+                field.setAccessible(true);
+                String name = field.getName();
+                if ("costSubcategory".equals(name)
+                        || "costCategory".equals(name)
+                        || "brand".equals(name)
+                        || "shopName".equals(name)
+                        || "businessName".equals(name)
+                        || "customName".equals(name)
+                        || "feishuDepartmentName".equals(name)
+                        || "employeeName".equals(name)
+                        || "supplierName".equals(name)
+                ) {
+                    if (field.get(testEntity) != null && ((String) field.get(testEntity)).contains("（")) {
+                        field.set(testEntity, ((String) field.get(testEntity)).replaceAll("（", "("));
+                    }
+                    if (field.get(testEntity) != null && ((String) field.get(testEntity)).contains("）")) {
+                        field.set(testEntity, ((String) field.get(testEntity)).replaceAll("）", ")"));
+                    }
+                }
+            }
+        } catch (IllegalAccessException e) {
+            log.error("转换异常: ", e);
+        }
+    }
+
+    public static String getExplanationName(String typeName, String serialNumber, List<ApprovalInstanceForm> forms, List<ApprovalInstanceForm> formDetails) {
+        if (StrUtil.isEmpty(typeName) || StrUtil.isEmpty(serialNumber) || ArrayUtil.isEmpty(formDetails) || ArrayUtil.isEmpty(forms)) {
+            log.error("参数为空: {},{},{},{}", typeName, serialNumber, forms, formDetails);
+            return "";
+        }
+        // 申请类别&收款人（单位）全称&所属品牌&费用归属年份费用归属月份&飞书流程号&费用大类&费用子类&品牌核销&备注
+        String summary = StringUtil.getValueByName(formDetails, "品牌是否核销");
+        String explanation = typeName +
+                "&" + StringUtil.getValueByName(forms, "收款人（单位）全称") +
+                "&" + StringUtil.getValueByName(formDetails, "所属品牌") +
+                "&" + StringUtil.getValueByName(formDetails, "费用归属年份") + StringUtil.getValueByName(formDetails, "费用归属月份") +
+                "&" + serialNumber +
+                "&" + StringUtil.getValueByName(formDetails, "费用大类") +
+                "&" + StringUtil.getValueByName(formDetails, "费用子类") +
+                ("是".equals(summary) ? "&品牌核销" : "") +
+                "&" + StringUtil.getValueByName(formDetails, "备注");
+        return explanation;
     }
 }

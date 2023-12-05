@@ -1,6 +1,5 @@
 package com.lundong.sync.util;
 
-import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson.JSON;
@@ -160,7 +159,7 @@ public class SignUtil {
                         .form(param)
                         .execute()
                         .body();
-                log.info("列出记录接口: {}", resultStr);
+                log.info("列出记录接口: {}", resultStr.substring(0, 100) + "...");
                 Thread.sleep(500L);
                 JSONObject jsonObject = JSON.parseObject(resultStr);
                 if (jsonObject.getInteger("code") != 0) {
@@ -170,9 +169,10 @@ public class SignUtil {
                 JSONObject data = (JSONObject) jsonObject.get("data");
                 JSONArray items = (JSONArray) data.get("items");
                 for (int i = 0; i < items.size(); i++) {
-                    JSONObject field = items.getJSONObject(i).getJSONObject("fields");
+                    JSONObject records = items.getJSONObject(i).getJSONObject("fields");
                     T testEntity;
-                    testEntity = JSONObject.toJavaObject(field, tClass);
+                    testEntity = JSONObject.toJavaObject(records, tClass);
+                    StringUtil.bracketReplace(testEntity);
                     results.add(testEntity);
                 }
                 if ((boolean) data.get("has_more")) {
