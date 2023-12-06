@@ -137,6 +137,14 @@ public class Constants {
     public static final String TABLE_15 = "tbln3DOuEqpfy6gd";
     public static List<Bitable> LIST_TABLE_15;
 
+    // 预付申请第一张（映射表）
+    public static final String TABLE_16 = "tblEsN5NE7cJLhbK";
+    public static List<Bitable> LIST_TABLE_16;
+
+    // 预付申请第二张（映射表）
+    public static final String TABLE_17 = "tblmLLWnuXaeMVxj";
+    public static List<Bitable> LIST_TABLE_17;
+
     // 多维表格生成凭证 多维表格APP_TOKEN
     public static final String APP_TOKEN_BITABLE = "";
 }
