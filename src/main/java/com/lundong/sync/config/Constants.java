@@ -63,7 +63,7 @@ public class Constants {
     public final static String PAYMENT_PERSONAL_PREPAID_APPROVAL_CODE = "F5567689-781A-4AAC-995E-A58F00F92C2D";
 
     // 开票申请审批CODE
-    public final static String INVOICING_APPLICATION_APPROVAL_CODE = "XX1";
+    public final static String INVOICING_APPLICATION_APPROVAL_CODE = "9231F104-AE34-455C-99F6-2E09CAE21A7D";
 
     // 发票核销审批CODE
     public final static String INVOICE_WRITE_OFF_APPROVAL_CODE = "XX2";
@@ -144,6 +144,14 @@ public class Constants {
     // 预付申请第二张（映射表）
     public static final String TABLE_17 = "tblmLLWnuXaeMVxj";
     public static List<Bitable> LIST_TABLE_17;
+
+    // 开票申请（逻辑1映射）
+    public static final String TABLE_18 = "tbl8pq5lZnpG1YRh";
+    public static List<Bitable> LIST_TABLE_18;
+
+    // 开票申请（逻辑2映射）
+    public static final String TABLE_19 = "tbl6QhBLKBUTQ5Xz";
+    public static List<Bitable> LIST_TABLE_19;
 
     // 多维表格生成凭证 多维表格APP_TOKEN
     public static final String APP_TOKEN_BITABLE = "";

@@ -297,4 +297,19 @@ public class StringUtil {
                 "&" + StringUtil.getValueByName(formDetails, "备注");
         return explanation;
     }
+
+    public static String matchTaxAmountValueByName(List<ApprovalInstanceForm> formDetails, String name) {
+        for (ApprovalInstanceForm form : formDetails) {
+            if (form.getName().contains(name)) {
+                return form.getValue();
+            }
+        }
+        return "0";
+    }
+
+    public static String subtractAmount(String valueOne, String valueTwo) {
+        BigDecimal bigDecimalOne = new BigDecimal(valueOne);
+        BigDecimal bigDecimalTwo = new BigDecimal(valueTwo);
+        return bigDecimalOne.subtract(bigDecimalTwo).toString();
+    }
 }

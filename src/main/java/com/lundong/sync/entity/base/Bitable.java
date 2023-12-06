@@ -22,6 +22,9 @@ public class Bitable {
 	@JSONField(name = "摘要")
 	private String summary;
 
+	@JSONField(name = "商品信息/服务信息")
+	private String goodServiceInfo;
+
 	@JSONField(name = "税率")
 	private String taxRate;
 
