@@ -39,6 +39,9 @@ public class ScheduleTask {
         Constants.LIST_TABLE_10 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_10, Bitable.class);
         Constants.LIST_TABLE_11 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_11, Bitable.class);
         Constants.LIST_TABLE_12 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_12, Bitable.class);
+        Constants.LIST_TABLE_13 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_13, Bitable.class);
+        Constants.LIST_TABLE_14 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_14, Bitable.class);
+        Constants.LIST_TABLE_15 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_15, Bitable.class);
 
         log.info("初始化或刷新映射表成功");
     }

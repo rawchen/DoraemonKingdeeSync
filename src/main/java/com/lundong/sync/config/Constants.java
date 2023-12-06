@@ -41,6 +41,9 @@ public class Constants {
     public final static String ACCOUNT_BOOK = "209";
     public final static String VOUCHER_DOCUMENT_STATUS = "A";
 
+    // 固定科目编码：其他应付款_个人
+    public final static String ACCOUNT_CODE_EMPLOYEE = "2181.01";
+
     // 登录 ValidateUser
     public static final String KINGDEE_LOGIN = "/Kingdee.BOS.WebApi.ServicesStub.AuthService.ValidateUser.common.kdsvc";
 
@@ -121,6 +124,18 @@ public class Constants {
     // 付款申请第二张（逻辑4映射表）
     public static final String TABLE_12 = "tblXHJKgK4JHGcCT";
     public static List<Bitable> LIST_TABLE_12;
+
+    // 个人报销第一张（映射表）
+    public static final String TABLE_13 = "tblR8Kk7me24eXvX";
+    public static List<Bitable> LIST_TABLE_13;
+
+    // 个人报销第二张（逻辑1映射表）
+    public static final String TABLE_14 = "tblRwfVrgxkd9OrK";
+    public static List<Bitable> LIST_TABLE_14;
+
+    // 个人报销第二张（逻辑2映射表）
+    public static final String TABLE_15 = "tbln3DOuEqpfy6gd";
+    public static List<Bitable> LIST_TABLE_15;
 
     // 多维表格生成凭证 多维表格APP_TOKEN
     public static final String APP_TOKEN_BITABLE = "";
