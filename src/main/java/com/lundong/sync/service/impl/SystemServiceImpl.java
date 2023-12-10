@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.lundong.sync.config.Constants;
 import com.lundong.sync.entity.AccountingDimensionParam;
+import com.lundong.sync.entity.ApprovalInstanceFormResult;
 import com.lundong.sync.entity.approval.ApprovalInstanceForm;
 import com.lundong.sync.entity.base.*;
 import com.lundong.sync.entity.bitable.SecondExceptionTable;
@@ -606,6 +607,115 @@ public class SystemServiceImpl implements SystemService {
                 break;
             case INVOICE_WRITE_OFF:
                 // 发票核销
+                String referenceInstanceCode;
+                List<String> instanceCodeList = StringUtil.getInstanceCodeList(forms, "核销发票");
+                String selectString = StringUtil.getValueByName(forms, "付款明细选择");
+                int number = StringUtil.getCurrentSelectNumber(selectString);
+                if (number == -1) {
+                    return;
+                } else {
+                    referenceInstanceCode = instanceCodeList.get(0);
+                }
+                ApprovalInstanceFormResult result = StringUtil.instanceToFormList(referenceInstanceCode);
+                if (result.getApprovalInstance() == null || ArrayUtil.isEmpty(result.getApprovalInstanceForms())) {
+                    log.error("审批实例转化后实例为空或者字段列表为空");
+                    return;
+                }
+                List<ApprovalInstanceForm> invoiceWriteOffForms = result.getApprovalInstanceForms();
+                formListDetails = StringUtil.getFormDetails(invoiceWriteOffForms, "明细");
+                if (ArrayUtil.isEmpty(formListDetails)) {
+                    log.error("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(invoiceWriteOffForms));
+                    return;
+                }
+                if (number > formListDetails.size()) {
+                    log.error("选择的明细索引超出了该引用单据明细列表");
+                    return;
+                }
+                List<ApprovalInstanceForm> formDetails = formListDetails.get(number);
+                Voucher voucherInvoiceWriteOff = new Voucher();
+                voucherInvoiceWriteOff.setDate(year + "-" + month + "-" + day);
+                voucherInvoiceWriteOff.setVoucherGroupId(VoucherGroupIdEnum.PRE004.getType());
+                List<VoucherDetail> voucherInvoiceWriteOffVoucherDetails = new ArrayList<>();
+//                for (List<ApprovalInstanceForm> formDetails : formListDetails) {
+//                }
+                List<Bitable> listTable;
+                // 判断是否核销逻辑一或二
+                String prepaidFee = StringUtil.getValueByName(formDetails, "品牌是否核销");
+                if ("是".equals(prepaidFee)) {
+                    listTable = Constants.LIST_TABLE_20;
+                } else {
+                    listTable = Constants.LIST_TABLE_21;
+                }
+
+                // 科目编码
+                String brandType;
+                if (!"总体管理".equals(StringUtil.getValueByName(formDetails, "所属品牌"))) {
+                    brandType = "Other";
+                } else {
+                    brandType = "总体管理";
+                }
+                List<Bitable> bitableList = listTable.stream().filter(n -> StringUtil.getValueByName(formDetails, "费用大类").equals(n.getCostCategory())
+                        && StringUtil.getValueByName(formDetails, "费用子类").equals(n.getCostSubcategory())
+                        && brandType.equals(n.getBrand())
+                ).collect(Collectors.toList());
+                Bitable bitable;
+//                List<Bitable> bitableList = listTable.stream().filter(n -> StringUtil.getValueByName(formDetails, "商品信息/服务信息").equals(n.getGoodServiceInfo())
+//                        && StringUtil.getValueByName(formDetails, "税率(%)").equals(n.getTaxRate())
+//                ).collect(Collectors.toList());
+                if (ArrayUtil.isEmpty(bitableList) || bitableList.size() > 1) {
+                    log.error("存在争议的科目编码，请检查参数是否在映射表匹配。费用大类：{} 费用子类：{} 所属品牌：{}",
+                            StringUtil.getValueByName(formDetails, "费用大类"), StringUtil.getValueByName(formDetails, "费用子类"), StringUtil.getValueByName(formDetails, "所属品牌"));
+                    return;
+                } else {
+                    bitable = bitableList.get(0);
+                    System.out.println("bitable: " + bitable);
+                    String summary = bitable.getSummary();
+                    // 摘要为空跳过该明细的借贷凭证列表
+                    if (StrUtil.isEmpty(summary)) {
+                        log.error("摘要为空");
+                        return;
+                    }
+                }
+                VoucherDetail j1 = new VoucherDetail();
+                VoucherDetail j2 = new VoucherDetail();
+                VoucherDetail d1 = new VoucherDetail();
+                String explanation = ("确认成本") +
+                        "&" + StringUtil.getValueByName(invoiceWriteOffForms, "收款人（单位）全称") +
+                        "&" + StringUtil.getValueByName(formDetails, "所属品牌") +
+                        "&" + StringUtil.getValueByName(formDetails, "费用归属年份") + StringUtil.getValueByName(formDetails, "费用归属月份") +
+                        "&" + serialNumber +
+                        "&" + StringUtil.getValueByName(formDetails, "费用大类") +
+                        "&" + StringUtil.getValueByName(formDetails, "费用子类") + ("是".equals(prepaidFee) ? "&品牌核销" : "") +
+                        "&" + StringUtil.getValueByName(forms, "备注");
+                j1.setExplanation(explanation);
+                j2.setExplanation(explanation);
+                d1.setExplanation(explanation);
+
+
+                String debitAmount = StringUtil.calculateIncludeTax(StringUtil.getValueByName(forms, "核销金额"), StringUtil.getValueByName(forms, "税率"));
+                j1.setDebit(debitAmount);
+                j1.setAmountFor(debitAmount);
+                String debitAmountTwo = StringUtil.calculateIncludeTaxTwo(StringUtil.getValueByName(forms, "核销金额"), StringUtil.getValueByName(forms, "税率"));
+                j2.setDebit(debitAmountTwo);
+                d1.setCredit(StringUtil.getValueByName(forms, "核销金额"));
+
+                // 借贷方科目编码名称维度组装
+                j1.setAccountId(bitable.getDebitAccountCodeOne());
+                String debitAccountingDimensionOne = bitable.getDebitAccountingDimensionOne();
+                VoucherDetail voucherDetailDebitOne = getAccountingDimensionParam(invoiceWriteOffForms, null, formDetails, j1, debitAccountingDimensionOne);
+                voucherInvoiceWriteOffVoucherDetails.add(voucherDetailDebitOne);
+
+                j2.setAccountId(bitable.getDebitAccountCodeTwo());
+                String debitAccountingDimensionTwo = bitable.getDebitAccountingDimensionTwo();
+                VoucherDetail voucherDetailDebitTwo = getAccountingDimensionParam(invoiceWriteOffForms, null, formDetails, j2, debitAccountingDimensionTwo);
+                voucherInvoiceWriteOffVoucherDetails.add(voucherDetailDebitTwo);
+
+                d1.setAccountId(bitable.getCreditAccountCodeOne());
+                String creditAccountingDimensionOne = bitable.getCreditAccountingDimensionOne();
+                VoucherDetail voucherDetailCreditOne = getAccountingDimensionParam(invoiceWriteOffForms, null, formDetails, d1, creditAccountingDimensionOne);
+                voucherInvoiceWriteOffVoucherDetails.add(voucherDetailCreditOne);
+                voucherInvoiceWriteOff.setVoucherDetails(voucherInvoiceWriteOffVoucherDetails);
+                SignUtil.saveVoucher(voucherInvoiceWriteOff);
                 break;
             case WITHHOLDING_APPLICATION:
                 // 预提申请

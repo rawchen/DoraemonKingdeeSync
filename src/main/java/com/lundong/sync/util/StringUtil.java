@@ -3,6 +3,8 @@ package com.lundong.sync.util;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.lundong.sync.config.Constants;
+import com.lundong.sync.entity.ApprovalInstance;
+import com.lundong.sync.entity.ApprovalInstanceFormResult;
 import com.lundong.sync.entity.approval.AccountValue;
 import com.lundong.sync.entity.approval.ApprovalInstanceForm;
 import com.lundong.sync.entity.approval.DepartmentValue;
@@ -311,5 +313,62 @@ public class StringUtil {
         BigDecimal bigDecimalOne = new BigDecimal(valueOne);
         BigDecimal bigDecimalTwo = new BigDecimal(valueTwo);
         return bigDecimalOne.subtract(bigDecimalTwo).toString();
+    }
+
+    public static ApprovalInstanceFormResult instanceToFormList(String instanceCode) {
+        ApprovalInstanceFormResult result = new ApprovalInstanceFormResult();
+        ApprovalInstance approvalInstance = SignUtil.approvalInstanceDetail(instanceCode);
+        List<ApprovalInstanceForm> approvalInstanceForms;
+        try {
+            if (approvalInstance != null) {
+                result.setApprovalInstance(approvalInstance);
+                approvalInstanceForms = JSONObject.parseArray(approvalInstance.getForm(), ApprovalInstanceForm.class);
+                if (ArrayUtil.isEmpty(approvalInstanceForms)) {
+                    log.info("实例Form解析字段列表为空");
+                    result.setApprovalInstanceForms(Collections.emptyList());
+                }
+                result.setApprovalInstanceForms(approvalInstanceForms);
+            }
+            return result;
+        } catch (Exception e) {
+            log.error("审批单据转换异常: ", e);
+            result.setApprovalInstanceForms(Collections.emptyList());
+            return result;
+        }
+    }
+
+    public static List<String> getInstanceCodeList(List<ApprovalInstanceForm> forms, String name) {
+        for (ApprovalInstanceForm form : forms) {
+            if (name.equals(form.getName())) {
+                try {
+                    List<String> departments = JSONObject.parseArray(form.getValue(), String.class);
+                    if (ArrayUtil.isEmpty(departments)) {
+                        log.error("审批中引用审批列表转换为空: {}", form.getValue());
+                        return Collections.emptyList();
+                    } else {
+                        return departments;
+                    }
+                } catch (Exception e) {
+                    log.error("审批中引用审批列表转换异常: {}", form.getValue());
+                    return Collections.emptyList();
+                }
+            }
+        }
+        return Collections.emptyList();
+    }
+
+    public static int getCurrentSelectNumber(String selectString) {
+
+        try {
+            if (selectString.startsWith("明细")) {
+                return Integer.parseInt(selectString.substring(2)) - 1;
+            } else {
+                log.error("审批设置的选择项目标题开头不为明细，请设置如下: 明细x");
+                return -1;
+            }
+        } catch (Exception e) {
+            log.error("强制转换Int异常");
+            return -1;
+        }
     }
 }

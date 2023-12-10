@@ -120,10 +120,12 @@ public class SignUtil {
                     return resultObject.getJSONObject("data").toJavaObject(ApprovalInstance.class);
                 } else {
                     log.error("获取单个审批实例详情接口出错: {}", resultStr);
+                    return null;
                 }
             }
         } catch (Exception e) {
             log.error("获取单个审批实例详情异常: ", e);
+            return null;
         }
         return null;
     }
@@ -238,6 +240,12 @@ public class SignUtil {
         int month = now.getMonthValue();
 //        int year = 2023;
 //        int month = 1;
+
+        for (VoucherDetail voucherDetail : voucher.getVoucherDetails()) {
+            if (voucherDetail.getAccountId() == null) {
+                log.error("凭证列表中存在科目编码为null");
+            }
+        }
 
         saveVoucherData = saveVoucherData.replace("账簿", Constants.ACCOUNT_BOOK);
         saveVoucherData = saveVoucherData.replace("账期日期", voucher.getDate());

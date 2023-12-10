@@ -66,13 +66,13 @@ public class Constants {
     public final static String INVOICING_APPLICATION_APPROVAL_CODE = "9231F104-AE34-455C-99F6-2E09CAE21A7D";
 
     // 发票核销审批CODE
-    public final static String INVOICE_WRITE_OFF_APPROVAL_CODE = "XX2";
+    public final static String INVOICE_WRITE_OFF_APPROVAL_CODE = "920AF2C1-24C0-47A0-BDE0-2CB4197727CE";
 
     // 预提申请审批CODE
-    public final static String WITHHOLDING_APPLICATION_APPROVAL_CODE = "XX3";
+    public final static String WITHHOLDING_APPLICATION_APPROVAL_CODE = "12F8F5FC-D80B-4E63-909A-E46E0B63ED78";
 
     // 退款申请审批CODE
-    public final static String REFUND_APPLICATION_APPROVAL_CODE = "XX4";
+    public final static String REFUND_APPLICATION_APPROVAL_CODE = "F030BE04-16FA-434B-BA77-5361E915D4D5";
 
     // 审批生成凭证 多维表格APP_TOKEN
     public static final String APP_TOKEN_APPROVAL = "ItOxbgPt2a3g3Gs0helc9x4znwd";
@@ -152,6 +152,30 @@ public class Constants {
     // 开票申请（逻辑2映射）
     public static final String TABLE_19 = "tbl6QhBLKBUTQ5Xz";
     public static List<Bitable> LIST_TABLE_19;
+
+    // 发票核销（逻辑1映射）
+    public static final String TABLE_20 = "tbllsy5ezYUktumN";
+    public static List<Bitable> LIST_TABLE_20;
+
+    // 发票核销（逻辑2映射）
+    public static final String TABLE_21 = "tblEYcufHXQVJUTQ";
+    public static List<Bitable> LIST_TABLE_21;
+
+    // 预提申请（逻辑1映射）
+    public static final String TABLE_22 = "tblUUh5RMI2YLcR9";
+    public static List<Bitable> LIST_TABLE_22;
+
+    // 预提申请（逻辑2映射）
+    public static final String TABLE_23 = "tblXK4tFzHnxpOoh";
+    public static List<Bitable> LIST_TABLE_23;
+
+    // 退款申请（逻辑1映射）
+    public static final String TABLE_24 = "tblQhQzDEtroJDqT";
+    public static List<Bitable> LIST_TABLE_24;
+
+    // 退款申请（逻辑2映射）
+    public static final String TABLE_25 = "tblntHRd0INhXiga";
+    public static List<Bitable> LIST_TABLE_25;
 
     // 多维表格生成凭证 多维表格APP_TOKEN
     public static final String APP_TOKEN_BITABLE = "";

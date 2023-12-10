@@ -1,17 +1,16 @@
 package com.lundong.sync.controller;
 
-import com.alibaba.fastjson.JSONObject;
 import com.lark.oapi.core.utils.Jsons;
 import com.lundong.sync.config.Constants;
-import com.lundong.sync.entity.ApprovalInstance;
-import com.lundong.sync.entity.approval.ApprovalInstanceForm;
+import com.lundong.sync.entity.ApprovalInstanceFormResult;
 import com.lundong.sync.enums.ApprovalInstanceEnum;
 import com.lundong.sync.event.ApprovalInstanceStatusUpdatedEvent;
 import com.lundong.sync.event.ApprovalInstanceStatusUpdatedV1Handler;
 import com.lundong.sync.event.CustomEventDispatcher;
 import com.lundong.sync.event.CustomServletAdapter;
 import com.lundong.sync.service.SystemService;
-import com.lundong.sync.util.SignUtil;
+import com.lundong.sync.util.ArrayUtil;
+import com.lundong.sync.util.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,7 +21,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.List;
 
 /**
  * @author RawChen
@@ -65,20 +63,12 @@ public class EventController {
                                 Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
                         if (ApprovalInstanceEnum.APPROVED.getType().equals(status)) {
                             // 根据审批实例ID查询审批单
-                            ApprovalInstance approvalInstance = SignUtil.approvalInstanceDetail(instanceCode);
-                            List<ApprovalInstanceForm> approvalInstanceForms;
-                            try {
-                                if (approvalInstance != null) {
-                                    approvalInstanceForms =
-                                            JSONObject.parseArray(approvalInstance.getForm(), ApprovalInstanceForm.class);
-                                } else {
-                                    return;
-                                }
-                            } catch (Exception e) {
-                                log.error("审批单据转换异常: ", e);
+                            ApprovalInstanceFormResult result = StringUtil.instanceToFormList(instanceCode);
+                            if (result.getApprovalInstance() == null | ArrayUtil.isEmpty(result.getApprovalInstanceForms())) {
                                 return;
                             }
-                            systemService.processApprovalForm(approvalInstanceForms, operateTime, approvalCode, approvalInstance.getSerialNumber());
+                            systemService.processApprovalForm(result.getApprovalInstanceForms(), operateTime, approvalCode,
+                                    result.getApprovalInstance().getSerialNumber());
                         }
                     }).start();
                 }
