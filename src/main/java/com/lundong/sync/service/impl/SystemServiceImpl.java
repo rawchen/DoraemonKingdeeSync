@@ -719,6 +719,88 @@ public class SystemServiceImpl implements SystemService {
                 break;
             case WITHHOLDING_APPLICATION:
                 // 预提申请
+                List<List<ApprovalInstanceForm>> whaFormListDetails = StringUtil.getFormDetails(forms, "明细");
+                if (ArrayUtil.isEmpty(whaFormListDetails)) {
+                    log.error("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(forms));
+                    return;
+                }
+                Voucher whaVoucher = new Voucher();
+                whaVoucher.setDate(year + "-" + month + "-" + day);
+                whaVoucher.setVoucherGroupId(VoucherGroupIdEnum.PRE004.getType());
+                List<VoucherDetail> whaVoucherDetails = new ArrayList<>();
+                for (List<ApprovalInstanceForm> whaFormDetails : whaFormListDetails) {
+                    List<Bitable> whaListTable;
+                    // 预收款走逻辑一或二
+                    String whaPrepaidFee = StringUtil.getValueByName(whaFormDetails, "品牌核销");
+                    if ("是".equals(whaPrepaidFee)) {
+                        whaListTable = Constants.LIST_TABLE_22;
+                    } else {
+                        whaListTable = Constants.LIST_TABLE_23;
+                    }
+                    // 科目编码
+                    String whaBrandType;
+                    if (!"总体管理".equals(StringUtil.getValueByName(whaFormDetails, "所属品牌"))) {
+                        whaBrandType = "Other";
+                    } else {
+                        whaBrandType = "总体管理";
+                    }
+                    Bitable whaBitable;
+                    List<Bitable> whaBitableList = whaListTable.stream().filter(n -> StringUtil.getValueByName(whaFormDetails, "费用大类").equals(n.getCostCategory())
+                            && StringUtil.getValueByName(whaFormDetails, "费用子类").equals(n.getCostSubcategory())
+                            && whaBrandType.equals(n.getBrand())
+                    ).collect(Collectors.toList());
+                    if (ArrayUtil.isEmpty(whaBitableList) || whaBitableList.size() > 1) {
+                        log.error("存在争议的科目编码，请检查参数是否在映射表匹配。费用大类：{} 费用子类：{} 所属品牌：{}",
+                                StringUtil.getValueByName(whaFormDetails, "费用大类"), StringUtil.getValueByName(whaFormDetails, "费用子类"), StringUtil.getValueByName(whaFormDetails, "所属品牌"));
+                        return;
+                    } else {
+                        whaBitable = whaBitableList.get(0);
+                        String summary = whaBitable.getSummary();
+                        // 摘要为空跳过该明细的借贷凭证列表
+                        if (StrUtil.isEmpty(summary)) {
+                            continue;
+                        }
+                    }
+                    VoucherDetail whaj1 = new VoucherDetail();
+                    VoucherDetail whad1 = new VoucherDetail();
+                    String whaExplanation = ("确认成本") +
+                            "&" + StringUtil.getValueByName(forms, "收款人名字/单位") +
+                            "&" + StringUtil.getValueByName(whaFormDetails, "所属品牌") +
+                            "&" + StringUtil.getValueByName(whaFormDetails, "费用归属年份") + StringUtil.getValueByName(whaFormDetails, "费用归属月份") +
+                            "&" + serialNumber +
+                            "&" + StringUtil.getValueByName(whaFormDetails, "费用大类") +
+                            "&" + StringUtil.getValueByName(whaFormDetails, "费用子类") + ("是".equals(whaPrepaidFee) ? "&品牌核销" : "") +
+                            "&" + StringUtil.getValueByName(whaFormDetails, "申请明细");
+                    whaj1.setExplanation(whaExplanation);
+                    whad1.setExplanation(whaExplanation);
+
+                    String invoiceType = StringUtil.getValueByName(whaFormDetails, "发票类型");
+                    String whaAmount = "";
+                    if ("专票".equals(invoiceType)) {
+                        whaAmount = StringUtil.calculateIncludeTax(StringUtil.getValueByName(whaFormDetails, "付款金额"), StringUtil.getValueByName(whaFormDetails, "税率"));
+                    } else if ("普票".equals(invoiceType)) {
+                        whaAmount = StringUtil.getValueByName(whaFormDetails, "付款金额");
+                    }
+                    // 不含税金额
+                    whaj1.setDebit(whaAmount);
+                    whaj1.setAmountFor(whaAmount);
+                    whad1.setCredit(whaAmount);
+
+                    // 借贷方科目编码名称维度组装
+                    whaj1.setAccountId(whaBitable.getDebitAccountCodeOne());
+                    String whaDebitAccountingDimensionOne = whaBitable.getDebitAccountingDimensionOne();
+                    VoucherDetail whaVoucherDetailDebitOne = getAccountingDimensionParam(forms, null, whaFormDetails, whaj1, whaDebitAccountingDimensionOne);
+                    whaVoucherDetails.add(whaVoucherDetailDebitOne);
+
+                    whad1.setAccountId(whaBitable.getCreditAccountCodeOne());
+                    String whaCreditAccountingDimensionOne = whaBitable.getCreditAccountingDimensionOne();
+                    VoucherDetail whaVoucherDetailCreditOne = getAccountingDimensionParam(forms, null, whaFormDetails, whad1, whaCreditAccountingDimensionOne);
+                    whaVoucherDetails.add(whaVoucherDetailCreditOne);
+                }
+                if (!whaVoucherDetails.isEmpty()) {
+                    whaVoucher.setVoucherDetails(whaVoucherDetails);
+                    SignUtil.saveVoucher(whaVoucher);
+                }
                 break;
             case REFUND_APPLICATION:
                 // 退款申请
@@ -749,7 +831,10 @@ public class SystemServiceImpl implements SystemService {
         param.setEmployee(employeeName);
         String supplierOrCustomName = StringUtil.getValueByName(forms, "收款人（单位）全称");
         if (StrUtil.isEmpty(supplierOrCustomName)) {
-            supplierOrCustomName = StringUtil.getValueByName(forms, "开票公司");
+            supplierOrCustomName = StringUtil.getValueByName(forms, "收款人名字/单位");
+            if (StrUtil.isEmpty(supplierOrCustomName)) {
+                supplierOrCustomName = StringUtil.getValueByName(forms, "开票公司");
+            }
         }
         param.setSupplierOrCustomName(supplierOrCustomName);
         AccountingDimension accountingDimensionDebitTwo = getAccountingDimension(param);

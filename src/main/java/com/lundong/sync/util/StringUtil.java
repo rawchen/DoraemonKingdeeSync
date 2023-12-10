@@ -208,6 +208,9 @@ public class StringUtil {
             log.error("税率或金额为空");
             return "0";
         } else {
+            if ("0%".equals(taxRate)) {
+                return amount;
+            }
             BigDecimal amountBigDecimal = new BigDecimal(amount);
             if (taxRate.endsWith("%")) {
                 taxRate = taxRate.substring(0, taxRate.length() - 1);
@@ -226,6 +229,9 @@ public class StringUtil {
             log.error("税率或金额为空");
             return "0";
         } else {
+            if ("0%".equals(taxRate)) {
+                return amount;
+            }
             BigDecimal amountBigDecimal = new BigDecimal(amount);
             if (taxRate.endsWith("%")) {
                 taxRate = taxRate.substring(0, taxRate.length() - 1);
