@@ -804,6 +804,75 @@ public class SystemServiceImpl implements SystemService {
                 break;
             case REFUND_APPLICATION:
                 // 退款申请
+                Voucher raVoucher = new Voucher();
+                raVoucher.setDate(year + "-" + month + "-" + day);
+                raVoucher.setVoucherGroupId(VoucherGroupIdEnum.PRE004.getType());
+                List<VoucherDetail> raVoucherDetails = new ArrayList<>();
+
+                List<Bitable> raListTable;
+                // 预收款走逻辑一或二
+                String raPrepaidFee = StringUtil.getValueByName(forms, "品牌核销");
+                if ("是".equals(raPrepaidFee)) {
+                    raListTable = Constants.LIST_TABLE_24;
+                } else {
+                    raListTable = Constants.LIST_TABLE_25;
+                }
+                // 科目编码
+                String raBrandType;
+                if (!"总体管理".equals(StringUtil.getValueByName(forms, "所属品牌"))) {
+                    raBrandType = "Other";
+                } else {
+                    raBrandType = "总体管理";
+                }
+                Bitable raBitable;
+                List<Bitable> raBitableList = raListTable.stream().filter(n -> StringUtil.getValueByName(forms, "费用大类").equals(n.getCostCategory())
+                        && StringUtil.getValueByName(forms, "费用子类").equals(n.getCostSubcategory())
+                        && raBrandType.equals(n.getBrand())
+                ).collect(Collectors.toList());
+                if (ArrayUtil.isEmpty(raBitableList) || raBitableList.size() > 1) {
+                    log.error("存在争议的科目编码，请检查参数是否在映射表匹配。费用大类：{} 费用子类：{} 所属品牌：{}",
+                            StringUtil.getValueByName(forms, "费用大类"), StringUtil.getValueByName(forms, "费用子类"), StringUtil.getValueByName(forms, "所属品牌"));
+                    return;
+                } else {
+                    raBitable = raBitableList.get(0);
+                    String summary = raBitable.getSummary();
+                    // 摘要为空直接退出
+                    if (StrUtil.isEmpty(summary)) {
+                        return;
+                    }
+                }
+                VoucherDetail raj1 = new VoucherDetail();
+                VoucherDetail rad1 = new VoucherDetail();
+                String raExplanation = ("暂估成本") +
+                        "&" + StringUtil.getValueByName(forms, "退款公司") +
+                        "&" + StringUtil.getValueByName(forms, "所属品牌") +
+                        "&" + StringUtil.getValueByName(forms, "费用归属年份") + StringUtil.getValueByName(forms, "费用归属月份") +
+                        "&" + serialNumber +
+                        "&" + StringUtil.getValueByName(forms, "费用大类") +
+                        "&" + StringUtil.getValueByName(forms, "费用子类") + ("是".equals(raPrepaidFee) ? "&品牌核销" : "") +
+                        "&" + StringUtil.getValueByName(forms, "申请明细");
+                raj1.setExplanation(raExplanation);
+                rad1.setExplanation(raExplanation);
+
+                String raAmount = StringUtil.calculateIncludeTax(StringUtil.positiveNumber(StringUtil.getValueByName(forms, "退款金额")), StringUtil.getValueByName(forms, "税率"));
+                // 不含税金额
+                raj1.setDebit(raAmount);
+                raj1.setAmountFor(StringUtil.positiveNumber(StringUtil.getValueByName(forms, "退款金额")));
+                rad1.setCredit(raAmount);
+
+                // 借贷方科目编码名称维度组装
+                raj1.setAccountId(raBitable.getDebitAccountCodeOne());
+                String raDebitAccountingDimensionOne = raBitable.getDebitAccountingDimensionOne();
+                VoucherDetail raVoucherDetailDebitOne = getAccountingDimensionParam(forms, null, forms, raj1, raDebitAccountingDimensionOne);
+                raVoucherDetails.add(raVoucherDetailDebitOne);
+
+                rad1.setAccountId(raBitable.getCreditAccountCodeOne());
+                String raCreditAccountingDimensionOne = raBitable.getCreditAccountingDimensionOne();
+                VoucherDetail raVoucherDetailCreditOne = getAccountingDimensionParam(forms, null, forms, rad1, raCreditAccountingDimensionOne);
+                raVoucherDetails.add(raVoucherDetailCreditOne);
+
+                raVoucher.setVoucherDetails(raVoucherDetails);
+                SignUtil.saveVoucher(raVoucher);
                 break;
         }
     }
@@ -834,6 +903,9 @@ public class SystemServiceImpl implements SystemService {
             supplierOrCustomName = StringUtil.getValueByName(forms, "收款人名字/单位");
             if (StrUtil.isEmpty(supplierOrCustomName)) {
                 supplierOrCustomName = StringUtil.getValueByName(forms, "开票公司");
+                if (StrUtil.isEmpty(supplierOrCustomName)) {
+                    supplierOrCustomName = StringUtil.getValueByName(forms, "退款公司");
+                }
             }
         }
         param.setSupplierOrCustomName(supplierOrCustomName);

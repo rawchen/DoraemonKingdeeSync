@@ -161,7 +161,7 @@ public class SignUtil {
                         .form(param)
                         .execute()
                         .body();
-                log.info("列出记录接口: {}", resultStr.substring(0, 100) + "...");
+                log.info("列出记录接口: {}", resultStr.length() > 100 ? resultStr.substring(0, 100) + "..." : resultStr);
                 Thread.sleep(500L);
                 JSONObject jsonObject = JSON.parseObject(resultStr);
                 if (jsonObject.getInteger("code") != 0) {

@@ -377,4 +377,14 @@ public class StringUtil {
             return -1;
         }
     }
+
+    public static String positiveNumber(String amount) {
+        if (StrUtil.isEmpty(amount)) {
+            return "";
+        }
+        if (amount.startsWith("-")) {
+            return amount.substring(1);
+        }
+        return "";
+    }
 }
