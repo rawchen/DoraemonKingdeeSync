@@ -1,7 +1,7 @@
 package com.lundong.sync.config;
 
 import com.lundong.sync.entity.base.*;
-import com.lundong.sync.entity.bitable.SecondExceptionTable;
+import com.lundong.sync.entity.bitable.approval.SecondExceptionTable;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 import java.util.List;
@@ -178,5 +178,48 @@ public class Constants {
     public static List<Bitable> LIST_TABLE_25;
 
     // 多维表格生成凭证 多维表格APP_TOKEN
-    public static final String APP_TOKEN_BITABLE = "";
+    public static final String APP_TOKEN_BITABLE = "Aw02btCEVa3GuBskRUfcSNelnI8";
+
+    // 收入暂估表
+    public static final String TABLE_ID_INCOME_ESTIMATION = "tblXtdpvOXX9Jweq";
+
+    // 消耗暂估表
+    public static final String TABLE_ID_CONSUMPTION_ESTIMATION = "tblINVYVClMC2ufd";
+
+    // 其他摊销
+    public static final String TABLE_ID_OTHER_AMORTIZATION = "tblh5dSMDcS4e7PC";
+
+    // 房租及物业
+    public static final String TABLE_ID_RENT_PROPERTY_MANAGEMENT = "tblc85SDjjaGjFSe";
+
+    // 长期待摊
+    public static final String TABLE_ID_RENOVATION = "tblPl3cl2qvO9qMe";
+
+    // 收入暂估核算维度映射表
+    public static final String TABLE_26 = "tblLvtxAoUPumvHB";
+    public static List<BrandShopBusiness> LIST_TABLE_26;
+
+    // 收入暂估科目映射表
+    public static final String TABLE_27 = "tblFxR0o9fnGHhxi";
+    public static List<Bitable> LIST_TABLE_27;
+
+    // 消耗暂估核算维度映射表
+    public static final String TABLE_28 = "tblSsMFVVOYb0eee";
+    public static List<Bitable> LIST_TABLE_28;
+
+    // 消耗暂估科目映射表
+    public static final String TABLE_29 = "tblmTAZVjBHYucKP";
+    public static List<Bitable> LIST_TABLE_29;
+
+    // 其他摊销核算维度映射表
+    public static final String TABLE_30 = "tblEP1HhHhHG8kQf";
+    public static List<Bitable> LIST_TABLE_30;
+
+    // 其他摊销科目映射表
+    public static final String TABLE_31 = "tblhv4iR8CH7NOUz";
+    public static List<Bitable> LIST_TABLE_31;
+
+    // 房租及物业摊销生成逻辑描述
+    public static final String TABLE_32 = "tblCblo8uDOP2kPB";
+    public static List<Bitable> LIST_TABLE_32;
 }

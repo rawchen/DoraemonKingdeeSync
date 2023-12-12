@@ -7,7 +7,7 @@ import com.lundong.sync.entity.AccountingDimensionParam;
 import com.lundong.sync.entity.ApprovalInstanceFormResult;
 import com.lundong.sync.entity.approval.ApprovalInstanceForm;
 import com.lundong.sync.entity.base.*;
-import com.lundong.sync.entity.bitable.SecondExceptionTable;
+import com.lundong.sync.entity.bitable.approval.SecondExceptionTable;
 import com.lundong.sync.entity.kingdee.AccountingDimension;
 import com.lundong.sync.entity.kingdee.Voucher;
 import com.lundong.sync.entity.kingdee.VoucherDetail;
@@ -668,7 +668,6 @@ public class SystemServiceImpl implements SystemService {
                     return;
                 } else {
                     bitable = bitableList.get(0);
-                    System.out.println("bitable: " + bitable);
                     String summary = bitable.getSummary();
                     // 摘要为空跳过该明细的借贷凭证列表
                     if (StrUtil.isEmpty(summary)) {

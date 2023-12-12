@@ -1,4 +1,4 @@
-package com.lundong.sync.entity.bitable;
+package com.lundong.sync.entity.bitable.approval;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;

@@ -1,5 +1,6 @@
 package com.lundong.sync.util;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson.JSON;
@@ -175,6 +176,7 @@ public class SignUtil {
                     T testEntity;
                     testEntity = JSONObject.toJavaObject(records, tClass);
                     StringUtil.bracketReplace(testEntity);
+                    StringUtil.clearSpecialSymbols(testEntity);
                     results.add(testEntity);
                 }
                 if ((boolean) data.get("has_more")) {
@@ -202,6 +204,43 @@ public class SignUtil {
         return findBaseList(accessToken, appToken, tableId, tClass);
     }
 
+    /**
+     * 列出记录
+     *
+     * @param accessToken
+     * @param appToken
+     * @param tableId
+     * @return
+     */
+    public static <T> T findBaseRecord(String accessToken, String appToken, String tableId, String recordId, Class<T> tClass) {
+        T result;
+        try {
+            String resultStr = HttpRequest.get("https://open.feishu.cn/open-apis/bitable/v1/apps/" + appToken + "/tables/" + tableId + "/records/" + recordId)
+                    .header("Authorization", "Bearer " + accessToken)
+                    .execute()
+                    .body();
+            log.info("检索记录接口: {}", resultStr);
+//            log.info("检索记录接口: {}", resultStr.length() > 100 ? resultStr.substring(0, 100) + "..." : resultStr);
+            JSONObject jsonObject = JSON.parseObject(resultStr);
+            if (jsonObject.getInteger("code") != 0) {
+                log.error("检索记录接口调用失败");
+                return null;
+            }
+            JSONObject fields = jsonObject.getJSONObject("data").getJSONObject("record").getJSONObject("fields");
+            result = JSONObject.toJavaObject(fields, tClass);
+            StringUtil.clearSpecialSymbols(result);
+        } catch (Exception e) {
+            log.info("检索记录接口调用异常", e);
+            return null;
+        }
+        return result;
+    }
+
+    public static <T> T findBaseRecord(String appToken, String tableId, String recordId, Class<T> tClass) {
+        String accessToken = getAccessToken(Constants.APP_ID_FEISHU, Constants.APP_SECRET_FEISHU);
+        return findBaseRecord(accessToken, appToken, tableId, recordId, tClass);
+    }
+
     public static List<HttpCookie> loginCookies() {
         KingdeeParam param = new KingdeeParam();
         param.setAcctId(Constants.ACCT_ID);
@@ -222,12 +261,16 @@ public class SignUtil {
         return loginResponse.getCookies();
     }
 
+    public static String saveVoucher(Voucher voucher) {
+        return saveVoucher(voucher, null);
+    }
+
     /**
      * 保存记账凭证
      *
      * @return
      */
-    public static String saveVoucher(Voucher voucher) {
+    public static String saveVoucher(Voucher voucher, String generationDate) {
         String saveVoucherData = "{\"formid\":\"GL_VOUCHER\",\"data\":{\"Model\":{\"FVOUCHERID\":0," +
                 "\"FAccountBookID\":{\"FNumber\":\"账簿\"},\"FDate\":\"账期日期\",\"FBUSDATE\":" +
                 "\"业务日期\",\"FYEAR\":会计年度,\"FPERIOD\":期间,\"FVOUCHERGROUPID\":{\"FNumber\":\"凭证字\"}," +
@@ -236,12 +279,20 @@ public class SignUtil {
                 "\"FDocumentStatus\":\"审核状态\",\"FEntity\":[分录列表]}}}";
 
         LocalDate now = LocalDate.now();
-        int year = now.getYear();
-        int month = now.getMonthValue();
-//        int year = 2023;
-//        int month = 1;
+        int year;
+        int month;
+        if (generationDate == null) {
+            year = now.getYear();
+            month = now.getMonthValue();
+        } else {
+            // 13位时间戳转年月日
+            List<Integer> timeList = StringUtil.timestampToYearMonthDay(generationDate);
+            year = timeList.get(0);
+            month = timeList.get(1);
+        }
 
         for (VoucherDetail voucherDetail : voucher.getVoucherDetails()) {
+            System.out.println(voucherDetail);
             if (voucherDetail.getAccountId() == null) {
                 log.error("凭证列表中存在科目编码为null");
             }
@@ -342,4 +393,27 @@ public class SignUtil {
         return null;
     }
 
+    public static void updateHasGenerate(String number, String appToken, String tableId, String recordId) {
+        try {
+            String statusStr = "是";
+            if (StrUtil.isEmpty(number)) {
+                log.error("修改状态失败，创建凭证出现错误");
+                statusStr = "否";
+            }
+            String body = "{\"fields\": {\"是否已生成\":\"" + statusStr + "\"}}";
+            String accessToken = getAccessToken(Constants.APP_ID_FEISHU, Constants.APP_SECRET_FEISHU);
+            String resultStr = HttpRequest.put("https://open.feishu.cn/open-apis/bitable/v1/apps/" + appToken + "/tables/" + tableId + "/records/" + recordId)
+                    .header("Authorization", "Bearer " + accessToken)
+                    .body(body)
+                    .execute()
+                    .body();
+            log.info("更新记录接口: {}", resultStr);
+            JSONObject jsonObject = JSON.parseObject(resultStr);
+            if (jsonObject.getInteger("code") != 0) {
+                log.error("更新记录接口失败: {}", resultStr);
+            }
+        } catch (Exception e) {
+            log.error("更新记录接口异常: ", e);
+        }
+    }
 }

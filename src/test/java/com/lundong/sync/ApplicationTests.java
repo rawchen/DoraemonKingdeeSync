@@ -2,7 +2,8 @@ package com.lundong.sync;
 
 import cn.hutool.core.util.ArrayUtil;
 import com.lundong.sync.entity.base.Bitable;
-import com.lundong.sync.entity.bitable.PaymentRequestOne;
+import com.lundong.sync.entity.bitable.approval.PaymentRequestOne;
+import com.lundong.sync.entity.bitable.bitable.IncomeEstimation;
 import com.lundong.sync.entity.kingdee.AccountingDimension;
 import com.lundong.sync.entity.kingdee.Voucher;
 import com.lundong.sync.entity.kingdee.VoucherDetail;
@@ -112,5 +113,16 @@ class ApplicationTests {
     void t07() {
         List<Bitable> bitables = Collections.emptyList();
         System.out.println(ArrayUtil.isEmpty(bitables));
+    }
+
+    @Test
+    void t08() {
+        IncomeEstimation baseRecord = SignUtil.findBaseRecord("Aw02btCEVa3GuBskRUfcSNelnI8", "tblXtdpvOXX9Jweq", "recncnIEwm", IncomeEstimation.class);
+        System.out.println(baseRecord);
+    }
+
+    @Test
+    void t09() {
+        SignUtil.updateHasGenerate("1", "Aw02btCEVa3GuBskRUfcSNelnI8", "tblXtdpvOXX9Jweq", "recncnIEwm");
     }
 }

@@ -1,8 +1,8 @@
 package com.lundong.sync.execution;
 
 import com.lundong.sync.config.Constants;
-import com.lundong.sync.entity.base.*;
-import com.lundong.sync.entity.bitable.SecondExceptionTable;
+import com.lundong.sync.entity.base.Bitable;
+import com.lundong.sync.entity.base.BrandShopBusiness;
 import com.lundong.sync.util.SignUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -27,31 +27,33 @@ public class ScheduleTask {
 //	@Scheduled(fixedRate = 30 * 1000)
     private void scheduleTask() {
         // 初始化到内存
-        Constants.LIST_TABLE_01 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_01, Bitable.class);
-        Constants.LIST_TABLE_02 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_02, BrandShopBusiness.class);
-        Constants.LIST_TABLE_03 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_03, Account.class);
-        Constants.LIST_TABLE_04 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_04, Supplier.class);
-        Constants.LIST_TABLE_05 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_05, Employee.class);
-        Constants.LIST_TABLE_06 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_06, Custom.class);
-        Constants.LIST_TABLE_07 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_07, Department.class);
-        Constants.LIST_TABLE_08 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_08, SecondExceptionTable.class);
-        Constants.LIST_TABLE_09 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_09, Bitable.class);
-        Constants.LIST_TABLE_10 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_10, Bitable.class);
-        Constants.LIST_TABLE_11 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_11, Bitable.class);
-        Constants.LIST_TABLE_12 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_12, Bitable.class);
-        Constants.LIST_TABLE_13 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_13, Bitable.class);
-        Constants.LIST_TABLE_14 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_14, Bitable.class);
-        Constants.LIST_TABLE_15 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_15, Bitable.class);
-        Constants.LIST_TABLE_16 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_16, Bitable.class);
-        Constants.LIST_TABLE_17 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_17, Bitable.class);
-        Constants.LIST_TABLE_18 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_18, Bitable.class);
-        Constants.LIST_TABLE_19 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_19, Bitable.class);
-        Constants.LIST_TABLE_20 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_20, Bitable.class);
-        Constants.LIST_TABLE_21 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_21, Bitable.class);
-        Constants.LIST_TABLE_22 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_22, Bitable.class);
-        Constants.LIST_TABLE_23 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_23, Bitable.class);
-        Constants.LIST_TABLE_24 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_24, Bitable.class);
-        Constants.LIST_TABLE_25 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_25, Bitable.class);
+//        Constants.LIST_TABLE_01 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_01, Bitable.class);
+//        Constants.LIST_TABLE_02 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_02, BrandShopBusiness.class);
+//        Constants.LIST_TABLE_03 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_03, Account.class);
+//        Constants.LIST_TABLE_04 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_04, Supplier.class);
+//        Constants.LIST_TABLE_05 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_05, Employee.class);
+//        Constants.LIST_TABLE_06 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_06, Custom.class);
+//        Constants.LIST_TABLE_07 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_07, Department.class);
+//        Constants.LIST_TABLE_08 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_08, SecondExceptionTable.class);
+//        Constants.LIST_TABLE_09 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_09, Bitable.class);
+//        Constants.LIST_TABLE_10 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_10, Bitable.class);
+//        Constants.LIST_TABLE_11 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_11, Bitable.class);
+//        Constants.LIST_TABLE_12 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_12, Bitable.class);
+//        Constants.LIST_TABLE_13 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_13, Bitable.class);
+//        Constants.LIST_TABLE_14 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_14, Bitable.class);
+//        Constants.LIST_TABLE_15 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_15, Bitable.class);
+//        Constants.LIST_TABLE_16 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_16, Bitable.class);
+//        Constants.LIST_TABLE_17 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_17, Bitable.class);
+//        Constants.LIST_TABLE_18 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_18, Bitable.class);
+//        Constants.LIST_TABLE_19 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_19, Bitable.class);
+//        Constants.LIST_TABLE_20 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_20, Bitable.class);
+//        Constants.LIST_TABLE_21 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_21, Bitable.class);
+//        Constants.LIST_TABLE_22 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_22, Bitable.class);
+//        Constants.LIST_TABLE_23 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_23, Bitable.class);
+//        Constants.LIST_TABLE_24 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_24, Bitable.class);
+//        Constants.LIST_TABLE_25 = SignUtil.findBaseList(Constants.APP_TOKEN_APPROVAL, Constants.TABLE_25, Bitable.class);
+        Constants.LIST_TABLE_26 = SignUtil.findBaseList(Constants.APP_TOKEN_BITABLE, Constants.TABLE_26, BrandShopBusiness.class);
+        Constants.LIST_TABLE_27 = SignUtil.findBaseList(Constants.APP_TOKEN_BITABLE, Constants.TABLE_27, Bitable.class);
 
         log.info("初始化或刷新映射表成功");
     }

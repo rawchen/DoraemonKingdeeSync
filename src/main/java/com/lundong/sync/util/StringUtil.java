@@ -16,6 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -386,5 +389,40 @@ public class StringUtil {
             return amount.substring(1);
         }
         return "";
+    }
+
+    public static List<Integer> timestampToYearMonthDay(String generationDate) {
+        long timestamp = Long.parseLong(generationDate);
+        Instant instant = Instant.ofEpochMilli(timestamp);
+        LocalDateTime dateTime = LocalDateTime.ofInstant(instant, ZoneOffset.ofHours(8));
+        // 获取年份
+        int year = dateTime.getYear();
+        int month = dateTime.getMonthValue();
+        int day = dateTime.getDayOfMonth();
+        List<Integer> result = new ArrayList<>();
+        result.add(year);
+        result.add(month);
+        result.add(day);
+        return result;
+    }
+
+    public static <T> void clearSpecialSymbols(T testEntity) {
+        try {
+            Class<?> clazz = testEntity.getClass();
+            Field[] fields = clazz.getDeclaredFields();
+
+            for (Field field : fields) {
+                field.setAccessible(true);
+                if (field.getType() == String.class) {
+                    if (field.get(testEntity) != null) {
+                        String temp = (String) field.get(testEntity);
+                        String result = temp.replace(" ", "").replace("\n", "").replace("\r", "").replace(" ", "");
+                        field.set(testEntity, result);
+                    }
+                }
+            }
+        } catch (IllegalAccessException e) {
+            log.error("转换异常: ", e);
+        }
     }
 }

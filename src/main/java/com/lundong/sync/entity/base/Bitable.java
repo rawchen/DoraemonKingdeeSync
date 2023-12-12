@@ -64,4 +64,7 @@ public class Bitable {
 	@JSONField(name = "贷方核算维度2")
 	private String creditAccountingDimensionTwo;
 
+	@JSONField(name = "收入类型")
+	private String incomeType;
+
 }
