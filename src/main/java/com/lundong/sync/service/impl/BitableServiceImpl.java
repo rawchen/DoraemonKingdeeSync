@@ -3,6 +3,7 @@ package com.lundong.sync.service.impl;
 import cn.hutool.core.util.StrUtil;
 import com.lundong.sync.config.Constants;
 import com.lundong.sync.entity.AccountingDimensionParam;
+import com.lundong.sync.entity.BitableParam;
 import com.lundong.sync.entity.base.Bitable;
 import com.lundong.sync.entity.base.BrandShopBusiness;
 import com.lundong.sync.entity.bitable.bitable.ConsumptionEstimation;
@@ -31,12 +32,12 @@ import java.util.stream.Collectors;
 public class BitableServiceImpl implements BitableService {
 
     @Override
-    public <T> void processBitable(T bitable, String appToken, String tableId, String recordId) {
+    public <T> void processBitable(T bitable, BitableParam bitableParam) {
         if (IncomeEstimation.class.isAssignableFrom(bitable.getClass())) {
             // 收入暂估
             IncomeEstimation incomeEstimation = (IncomeEstimation) bitable;
             if ("是".equals(incomeEstimation.getHasGenerate())) {
-                log.info("已生成过该凭证，appToken: {}, tableId: {}, recordId: {}", appToken, tableId, recordId);
+                log.info("已生成过该凭证: {}", bitableParam);
             } else {
                 Voucher voucher = new Voucher();
                 List<Integer> timeList = StringUtil.timestampToYearMonthDay(incomeEstimation.getGenerationDate());
@@ -101,7 +102,7 @@ public class BitableServiceImpl implements BitableService {
                 voucherDetails.add(voucherDetailCreditTwo);
 
                 voucher.setVoucherDetails(voucherDetails);
-                SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, incomeEstimation.getGenerationDate()), appToken, tableId, recordId);
+                SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, incomeEstimation.getGenerationDate()), bitableParam);
             }
         } else if (ConsumptionEstimation.class.isAssignableFrom(bitable.getClass())) {
             // 消耗暂估

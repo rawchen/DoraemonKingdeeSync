@@ -8,6 +8,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.lundong.sync.config.Constants;
 import com.lundong.sync.entity.ApprovalInstance;
+import com.lundong.sync.entity.BitableParam;
 import com.lundong.sync.entity.feishu.FeishuUser;
 import com.lundong.sync.entity.kingdee.KingdeeParam;
 import com.lundong.sync.entity.kingdee.Voucher;
@@ -208,14 +209,17 @@ public class SignUtil {
      * 列出记录
      *
      * @param accessToken
-     * @param appToken
-     * @param tableId
+     * @param bitableParam
+     * @param tClass
      * @return
+     * @param <T>
      */
-    public static <T> T findBaseRecord(String accessToken, String appToken, String tableId, String recordId, Class<T> tClass) {
+    public static <T> T findBaseRecord(String accessToken, BitableParam bitableParam, Class<T> tClass) {
         T result;
         try {
-            String resultStr = HttpRequest.get("https://open.feishu.cn/open-apis/bitable/v1/apps/" + appToken + "/tables/" + tableId + "/records/" + recordId)
+            String resultStr = HttpRequest.get("https://open.feishu.cn/open-apis/bitable/v1/apps/" +
+                            bitableParam.getAppToken() +
+                            "/tables/" + bitableParam.getTableId() + "/records/" + bitableParam.getRecordId())
                     .header("Authorization", "Bearer " + accessToken)
                     .execute()
                     .body();
@@ -236,9 +240,9 @@ public class SignUtil {
         return result;
     }
 
-    public static <T> T findBaseRecord(String appToken, String tableId, String recordId, Class<T> tClass) {
+    public static <T> T findBaseRecord(BitableParam bitableParam, Class<T> tClass) {
         String accessToken = getAccessToken(Constants.APP_ID_FEISHU, Constants.APP_SECRET_FEISHU);
-        return findBaseRecord(accessToken, appToken, tableId, recordId, tClass);
+        return findBaseRecord(accessToken, bitableParam, tClass);
     }
 
     public static List<HttpCookie> loginCookies() {
@@ -393,7 +397,7 @@ public class SignUtil {
         return null;
     }
 
-    public static void updateHasGenerate(String number, String appToken, String tableId, String recordId) {
+    public static void updateHasGenerate(String number, BitableParam bitableParam) {
         try {
             String statusStr = "是";
             if (StrUtil.isEmpty(number)) {
@@ -402,7 +406,9 @@ public class SignUtil {
             }
             String body = "{\"fields\": {\"是否已生成\":\"" + statusStr + "\"}}";
             String accessToken = getAccessToken(Constants.APP_ID_FEISHU, Constants.APP_SECRET_FEISHU);
-            String resultStr = HttpRequest.put("https://open.feishu.cn/open-apis/bitable/v1/apps/" + appToken + "/tables/" + tableId + "/records/" + recordId)
+            String resultStr = HttpRequest.put("https://open.feishu.cn/open-apis/bitable/v1/apps/" +
+                            bitableParam.getAppToken() +
+                            "/tables/" + bitableParam.getTableId() + "/records/" + bitableParam.getRecordId())
                     .header("Authorization", "Bearer " + accessToken)
                     .body(body)
                     .execute()
