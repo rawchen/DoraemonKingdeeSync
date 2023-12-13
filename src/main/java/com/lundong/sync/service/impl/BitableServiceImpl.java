@@ -8,6 +8,7 @@ import com.lundong.sync.entity.base.Bitable;
 import com.lundong.sync.entity.base.BrandShopBusiness;
 import com.lundong.sync.entity.bitable.bitable.ConsumptionEstimation;
 import com.lundong.sync.entity.bitable.bitable.IncomeEstimation;
+import com.lundong.sync.entity.bitable.bitable.OtherAmortization;
 import com.lundong.sync.entity.kingdee.AccountingDimension;
 import com.lundong.sync.entity.kingdee.Voucher;
 import com.lundong.sync.entity.kingdee.VoucherDetail;
@@ -188,6 +189,70 @@ public class BitableServiceImpl implements BitableService {
                 voucher.setVoucherDetails(voucherDetails);
                 SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, consumptionEstimation.getGenerationDate()), bitableParam);
             }
+        } else if (OtherAmortization.class.isAssignableFrom(bitable.getClass())) {
+            OtherAmortization otherAmortization = (OtherAmortization) bitable;
+            if ("是".equals(otherAmortization.getHasGenerate())) {
+                log.info("已生成过该凭证: {}", bitableParam);
+            } else {
+                Voucher voucher = new Voucher();
+                List<Integer> timeList = StringUtil.timestampToYearMonthDay(otherAmortization.getGenerationDate());
+                int year = timeList.get(0);
+                int month = timeList.get(1);
+                int day = timeList.get(2);
+                voucher.setDate(year + "-" + month + "-" + day);
+                voucher.setVoucherGroupId(VoucherGroupIdEnum.PRE004.getType());
+                VoucherDetail j1 = new VoucherDetail();
+                VoucherDetail d1 = new VoucherDetail();
+
+                List<BrandShopBusiness> accountingDimensionBaseList = Constants.LIST_TABLE_30;
+                List<Bitable> accountMappingBaseList = Constants.LIST_TABLE_31;
+                accountingDimensionBaseList = accountingDimensionBaseList.stream().filter(
+                        n -> otherAmortization.getAmortizationItems().equals(n.getAmortizationItems())).collect(Collectors.toList());
+                accountMappingBaseList = accountMappingBaseList.stream().filter(
+                        n -> otherAmortization.getAmortizationItems().equals(n.getAmortizationItems())).collect(Collectors.toList());
+                BrandShopBusiness bitableAccountingDimension;
+                Bitable bitableAccountMapping;
+                if (ArrayUtil.isEmpty(accountingDimensionBaseList) || accountingDimensionBaseList.size() > 1) {
+                    log.error("存在争议的核算维度映射，请检查参数是否在映射表匹配。摊销项目：{}", otherAmortization.getAmortizationItems());
+                    return;
+                } else {
+                    bitableAccountingDimension = accountingDimensionBaseList.get(0);
+                }
+                if (ArrayUtil.isEmpty(accountMappingBaseList) || accountMappingBaseList.size() > 1) {
+                    log.error("存在争议的科目映射，请检查参数是否在映射表匹配。摊销项目：{}", otherAmortization.getAmortizationItems());
+                    return;
+                } else {
+                    bitableAccountMapping = accountMappingBaseList.get(0);
+                }
+
+                // 构建
+                String explanation = ("摊销") +
+                        "&" + otherAmortization.getSupplierName() +
+                        "&" + StringUtil.placeholderTwo(StringUtil.timestampToYearMonthDay(otherAmortization.getCorrespondingAmortizationDate()).get(0)) +
+                        StringUtil.placeholderTwo(StringUtil.timestampToYearMonthDay(otherAmortization.getCorrespondingAmortizationDate()).get(1)) +
+                        "&" + otherAmortization.getAmortizationItems();
+                j1.setExplanation(explanation);
+                d1.setExplanation(explanation);
+
+                j1.setAmountFor(otherAmortization.getAmount());
+                j1.setDebit(otherAmortization.getAmount());
+                d1.setCredit(otherAmortization.getAmount());
+
+                List<VoucherDetail> voucherDetails = new ArrayList<>();
+                // 借贷方科目编码名称维度组装
+                j1.setAccountId(bitableAccountMapping.getDebitAccountCodeOne());
+                String debitAccountingDimensionOne = bitableAccountMapping.getDebitAccountingDimensionOne();
+                VoucherDetail voucherDetailDebitOne = getAccountingDimensionParam(bitableAccountingDimension, j1, debitAccountingDimensionOne);
+                voucherDetails.add(voucherDetailDebitOne);
+
+                d1.setAccountId(bitableAccountMapping.getCreditAccountCodeOne());
+                String creditAccountingDimensionOne = bitableAccountMapping.getCreditAccountingDimensionOne();
+                VoucherDetail voucherDetailCreditOne = getAccountingDimensionParam(bitableAccountingDimension, d1, creditAccountingDimensionOne);
+                voucherDetails.add(voucherDetailCreditOne);
+
+                voucher.setVoucherDetails(voucherDetails);
+                SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, otherAmortization.getGenerationDate()), bitableParam);
+            }
         }
     }
 
@@ -238,6 +303,8 @@ public class BitableServiceImpl implements BitableService {
                 accountingDimension.setFflex6(bitableAccountingDimension.getCustomCode());
             } else if ("供应商".equals(s)) {
                 accountingDimension.setFflex4(accountingDimensionParam.getSupplierCode());
+            } else if ("部门".equals(s)) {
+                accountingDimension.setFflex5(bitableAccountingDimension.getDepartmentCode());
             }
         }
         StringUtil.setFieldEmpty(accountingDimension);

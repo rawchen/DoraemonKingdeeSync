@@ -213,13 +213,9 @@ public class Constants {
 
     // 其他摊销核算维度映射表
     public static final String TABLE_30 = "tblEP1HhHhHG8kQf";
-    public static List<Bitable> LIST_TABLE_30;
+    public static List<BrandShopBusiness> LIST_TABLE_30;
 
     // 其他摊销科目映射表
     public static final String TABLE_31 = "tblhv4iR8CH7NOUz";
     public static List<Bitable> LIST_TABLE_31;
-
-    // 房租及物业摊销生成逻辑描述
-    public static final String TABLE_32 = "tblCblo8uDOP2kPB";
-    public static List<Bitable> LIST_TABLE_32;
 }

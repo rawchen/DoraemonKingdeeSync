@@ -36,6 +36,13 @@ public class BrandShopBusiness {
     @JSONField(name = "客户名称")
     private String customName;
 
+    @JSONField(name = "摊销项目")
+    private String amortizationItems;
 
+    @JSONField(name = "部门编码")
+    private String departmentCode;
+
+    @JSONField(name = "部门名称")
+    private String departmentName;
 
 }
