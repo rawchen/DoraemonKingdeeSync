@@ -1,8 +1,10 @@
 package com.lundong.sync;
 
 import cn.hutool.core.util.ArrayUtil;
+import com.lundong.sync.entity.BitableParam;
 import com.lundong.sync.entity.base.Bitable;
 import com.lundong.sync.entity.bitable.approval.PaymentRequestOne;
+import com.lundong.sync.entity.bitable.bitable.ConsumptionEstimation;
 import com.lundong.sync.entity.bitable.bitable.IncomeEstimation;
 import com.lundong.sync.entity.kingdee.AccountingDimension;
 import com.lundong.sync.entity.kingdee.Voucher;
@@ -117,12 +119,30 @@ class ApplicationTests {
 
     @Test
     void t08() {
-        IncomeEstimation baseRecord = SignUtil.findBaseRecord("Aw02btCEVa3GuBskRUfcSNelnI8", "tblXtdpvOXX9Jweq", "recncnIEwm", IncomeEstimation.class);
+        BitableParam bitableParam = new BitableParam();
+        bitableParam.setAppToken("Aw02btCEVa3GuBskRUfcSNelnI8");
+        bitableParam.setTableId("tblXtdpvOXX9Jweq");
+        bitableParam.setRecordId("recncnIEwm");
+        IncomeEstimation baseRecord = SignUtil.findBaseRecord(bitableParam, IncomeEstimation.class);
         System.out.println(baseRecord);
     }
 
     @Test
     void t09() {
-        SignUtil.updateHasGenerate("1", "Aw02btCEVa3GuBskRUfcSNelnI8", "tblXtdpvOXX9Jweq", "recncnIEwm");
+        BitableParam bitableParam = new BitableParam();
+        bitableParam.setAppToken("Aw02btCEVa3GuBskRUfcSNelnI8");
+        bitableParam.setTableId("tblXtdpvOXX9Jweq");
+        bitableParam.setRecordId("recncnIEwm");
+        SignUtil.updateHasGenerate("1", bitableParam);
+    }
+
+    @Test
+    void t10() {
+        BitableParam bitableParam = new BitableParam();
+        bitableParam.setAppToken("Aw02btCEVa3GuBskRUfcSNelnI8");
+        bitableParam.setTableId("tblINVYVClMC2ufd");
+        bitableParam.setRecordId("recoQiMj5Z");
+        ConsumptionEstimation baseRecord = SignUtil.findBaseRecord(bitableParam, ConsumptionEstimation.class);
+        System.out.println(baseRecord);
     }
 }

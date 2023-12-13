@@ -67,4 +67,10 @@ public class Bitable {
 	@JSONField(name = "收入类型")
 	private String incomeType;
 
+	@JSONField(name = "客户/公司承担")
+	private String customerCompanyResponsible;
+
+	@JSONField(name = "消耗类型")
+	private String consumptionType;
+
 }

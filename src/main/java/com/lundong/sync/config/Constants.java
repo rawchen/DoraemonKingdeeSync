@@ -205,7 +205,7 @@ public class Constants {
 
     // 消耗暂估核算维度映射表
     public static final String TABLE_28 = "tblSsMFVVOYb0eee";
-    public static List<Bitable> LIST_TABLE_28;
+    public static List<BrandShopBusiness> LIST_TABLE_28;
 
     // 消耗暂估科目映射表
     public static final String TABLE_29 = "tblmTAZVjBHYucKP";

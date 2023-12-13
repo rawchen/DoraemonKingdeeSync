@@ -425,4 +425,31 @@ public class StringUtil {
             log.error("转换异常: ", e);
         }
     }
+
+    public static String placeholderTwo(int month) {
+        if (month >= 1 && month <= 9) {
+            return "0" + month;
+        } else {
+            return String.valueOf(month);
+        }
+    }
+
+    public static String subBusinessName(String businessName) {
+        if (StrUtil.isEmpty(businessName)) {
+            return "";
+        }
+        if (businessName.contains("-")) {
+            return businessName.substring(businessName.lastIndexOf("-") + 1);
+        } else {
+            return businessName;
+        }
+    }
+
+    public static String keepTwoDecimalPlaces(String excludingTaxAmount) {
+        if (StrUtil.isEmpty(excludingTaxAmount)) {
+            return "0";
+        }
+        BigDecimal bigDecimal = new BigDecimal(excludingTaxAmount);
+        return bigDecimal.divide(BigDecimal.ONE, 2 , RoundingMode.HALF_UP).toString();
+    }
 }

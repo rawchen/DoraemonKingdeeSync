@@ -25,6 +25,11 @@ public class AccountingDimensionParam {
     private String supplierOrCustomName;
 
     /**
+     * 供应商代码
+     */
+    private String supplierCode;
+
+    /**
      * 员工
      */
     private String employee;
