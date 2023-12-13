@@ -199,8 +199,13 @@ public class SystemServiceImpl implements SystemService {
                         String debitAmount = StringUtil.calculateIncludeTax(StringUtil.getValueByName(formDetails, "金额"), StringUtil.getValueByName(formDetails, "税率"));
                         j1.setDebit(debitAmount);
                         String debitAmountTwo = StringUtil.calculateIncludeTaxTwo(StringUtil.getValueByName(formDetails, "金额"), StringUtil.getValueByName(formDetails, "税率"));
-                        j2.setDebit(debitAmountTwo);
-                        d1.setCredit(StringUtil.getValueByName(formDetails, "金额"));
+                        if (bitable.getDebitAccountCodeTwo() != null) {
+                            j2.setDebit(debitAmountTwo);
+                            d1.setCredit(StringUtil.getValueByName(formDetails, "金额"));
+                        } else {
+                            j2.setDebit("0");
+                            d1.setCredit(debitAmount);
+                        }
 
                         // 借贷方科目编码名称维度组装
                         j1.setAccountId(bitable.getDebitAccountCodeOne());
@@ -213,8 +218,6 @@ public class SystemServiceImpl implements SystemService {
                             String debitAccountingDimensionTwo = bitable.getDebitAccountingDimensionTwo();
                             VoucherDetail voucherDetailDebitTwo = getAccountingDimensionParam(forms, employeeName, formDetails, j2, debitAccountingDimensionTwo);
                             voucherTwoDetails.add(voucherDetailDebitTwo);
-                        } else {
-                            j1.setDebit(StringUtil.getValueByName(formDetails, "金额"));
                         }
                         d1.setAccountId(bitable.getCreditAccountCodeOne());
                         String creditAccountingDimensionOne = bitable.getCreditAccountingDimensionOne();

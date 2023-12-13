@@ -33,24 +33,36 @@ public class SignUtil {
      * 飞书自建应用获取tenant_access_token
      */
     public static String getAccessToken(String appId, String appSecret) {
+
+        if (!StrUtil.isEmpty(Constants.ACCESS_TOKEN)) {
+            return Constants.ACCESS_TOKEN;
+        }
         JSONObject object = new JSONObject();
         object.put("app_id", appId);
         object.put("app_secret", appSecret);
-        String resultStr = HttpRequest.post("https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal")
-                .form(object)
-                .execute().body();
-        if (StringUtils.isNotEmpty(resultStr)) {
-            JSONObject resultObject = (JSONObject) JSON.parse(resultStr);
-            if (!"0".equals(resultObject.getString("code"))) {
-                return "";
-            } else {
-                String tenantAccessToken = resultObject.getString("tenant_access_token");
-                if (tenantAccessToken != null) {
-                    return tenantAccessToken;
+        try {
+            HttpResponse execute = HttpRequest.post("https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal")
+                    .form(object)
+                    .execute();
+            String resultStr = execute.body();
+            execute.close();
+            if (StringUtils.isNotEmpty(resultStr)) {
+                JSONObject resultObject = (JSONObject) JSON.parse(resultStr);
+                if (resultObject.getInteger("code") != 0) {
+                    log.error("获取tenant_access_token失败：{}", resultStr);
+                    return "";
+                } else {
+                    String tenantAccessToken = resultObject.getString("tenant_access_token");
+                    if (tenantAccessToken != null) {
+                        return tenantAccessToken;
+                    }
                 }
             }
+            return "";
+        } catch (Exception e) {
+            log.error("获取tenant_access_token异常", e);
+            return "";
         }
-        return "";
     }
 
     /**
@@ -158,13 +170,14 @@ public class SignUtil {
         try {
             while (hasMore) {
                 param.put("page_size", 500);
-                String resultStr = HttpRequest.get("https://open.feishu.cn/open-apis/bitable/v1/apps/" + appToken + "/tables/" + tableId + "/records")
+                HttpResponse response = HttpRequest.get("https://open.feishu.cn/open-apis/bitable/v1/apps/" + appToken + "/tables/" + tableId + "/records")
                         .header("Authorization", "Bearer " + accessToken)
                         .form(param)
-                        .execute()
-                        .body();
+                        .execute();
+                String resultStr = response.body();
+                response.close();
                 log.info("列出记录接口: {}", resultStr.length() > 100 ? resultStr.substring(0, 100) + "..." : resultStr);
-                Thread.sleep(500L);
+//                Thread.sleep(2000L);
                 JSONObject jsonObject = JSON.parseObject(resultStr);
                 if (jsonObject.getInteger("code") != 0) {
                     log.error("列出记录接口调用失败");

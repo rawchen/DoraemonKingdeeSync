@@ -70,8 +70,7 @@ public class BitableServiceImpl implements BitableService {
 
                 // 构建
                 String explanation = ("收入暂估") +
-                        "&" + incomeEstimation.getYear() +
-                        "&" + incomeEstimation.getMonth() +
+                        "&" + incomeEstimation.getYear() + incomeEstimation.getMonth() +
                         "&" + bitableAccountingDimension.getCustomName() +
                         "&" + incomeEstimation.getDesc();
                 j1.setExplanation(explanation);
@@ -147,8 +146,7 @@ public class BitableServiceImpl implements BitableService {
 
                 // 构建
                 String explanation = ("千川消耗") +
-                        "&" + year +
-                        "." + StringUtil.placeholderTwo(month) +
+                        "&" + year + StringUtil.placeholderTwo(month) +
                         "&" + consumptionEstimation.getSupplierName() +
                         "&" + StringUtil.subBusinessName(bitableAccountingDimension.getBusinessName());
                 j1.setExplanation(explanation);
