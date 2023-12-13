@@ -295,6 +295,49 @@ public class BitableServiceImpl implements BitableService {
                 voucher.setVoucherDetails(voucherDetails);
                 SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, defer.getGenerationDate()), bitableParam);
             }
+        } else if (DeferRenovation.class.isAssignableFrom(bitable.getClass())) {
+            // 长期待摊-装修
+            DeferRenovation defer = (DeferRenovation) bitable;
+            if ("是".equals(defer.getHasGenerate())) {
+                log.info("已生成过该凭证: {}", bitableParam);
+            } else {
+                Voucher voucher = new Voucher();
+                List<Integer> timeList = StringUtil.timestampToYearMonthDay(defer.getGenerationDate());
+                int year = timeList.get(0);
+                int month = timeList.get(1);
+                int day = timeList.get(2);
+                voucher.setDate(year + "-" + month + "-" + day);
+                voucher.setVoucherGroupId(VoucherGroupIdEnum.PRE004.getType());
+                VoucherDetail j1 = new VoucherDetail();
+                VoucherDetail d1 = new VoucherDetail();
+
+                // 构建
+                String explanation = ("摊销") +
+                        "&" + defer.getSupplierName() +
+                        "&" + StringUtil.placeholderTwo(StringUtil.timestampToYearMonthDay(defer.getCorrespondingAmortizationDate()).get(0)) +
+                        StringUtil.placeholderTwo(StringUtil.timestampToYearMonthDay(defer.getCorrespondingAmortizationDate()).get(1)) +
+                        "&" + defer.getAmortizationItems() +
+                        "&" + StringUtil.subShopName(defer.getShopName());
+                j1.setExplanation(explanation);
+                d1.setExplanation(explanation);
+
+                j1.setAmountFor(defer.getAmount());
+                j1.setDebit(defer.getAmount());
+                d1.setCredit(defer.getAmount());
+
+                List<VoucherDetail> voucherDetails = new ArrayList<>();
+                // 借贷方科目编码名称维度组装
+                j1.setAccountId(defer.getDebitAccountCode());
+                j1.setAccountingDimension(getAccountingDimensionNotMappingTwo(defer, defer.getDebitAccountingDimension()));
+                voucherDetails.add(j1);
+
+                d1.setAccountId(defer.getCreditAccountCode());
+                d1.setAccountingDimension(getAccountingDimensionNotMappingTwo(defer, defer.getCreditAccountingDimension()));
+                voucherDetails.add(d1);
+
+                voucher.setVoucherDetails(voucherDetails);
+                SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, defer.getGenerationDate()), bitableParam);
+            }
         }
     }
 
@@ -313,6 +356,27 @@ public class BitableServiceImpl implements BitableService {
                 accountingDimension.setFf100005(defer.getBusinessCode());
             } else if ("项目档案".equals(s)) {
                 accountingDimension.setFf100004(defer.getProjectArchiveCode());
+            } else if ("部门".equals(s)) {
+                accountingDimension.setFflex5(defer.getDepartmentCode());
+            }
+        }
+        StringUtil.setFieldEmpty(accountingDimension);
+        return accountingDimension;
+    }
+
+    private AccountingDimension getAccountingDimensionNotMappingTwo(DeferRenovation defer, String accountingDimensionStr) {
+        if (defer == null || StrUtil.isEmpty(accountingDimensionStr)) {
+            return new AccountingDimension();
+        }
+        AccountingDimension accountingDimension = new AccountingDimension();
+        // 分割&品牌
+        String[] accountingDimensionArr = accountingDimensionStr.split("&");
+        // 遍历核算维度
+        for (String s : accountingDimensionArr) {
+            if ("店铺".equals(s)) {
+                accountingDimension.setFf100002(defer.getShopCode());
+            } else if ("新业务组".equals(s)) {
+                accountingDimension.setFf100005(defer.getBusinessCode());
             } else if ("部门".equals(s)) {
                 accountingDimension.setFflex5(defer.getDepartmentCode());
             }
