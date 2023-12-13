@@ -44,11 +44,11 @@ public class BitableController {
                 bitableService.processBitable(baseRecord03, bitableParam);
                 break;
             case TABLE_ID_RENT_PROPERTY_MANAGEMENT:
-                RentPropertyManagement baseRecord04 = SignUtil.findBaseRecord(bitableParam, RentPropertyManagement.class);
+                DeferRentPropertyManagement baseRecord04 = SignUtil.findBaseRecord(bitableParam, DeferRentPropertyManagement.class);
                 bitableService.processBitable(baseRecord04, bitableParam);
                 break;
             case TABLE_ID_RENOVATION:
-                Renovation baseRecord05 = SignUtil.findBaseRecord(bitableParam, Renovation.class);
+                DeferRenovation baseRecord05 = SignUtil.findBaseRecord(bitableParam, DeferRenovation.class);
                 bitableService.processBitable(baseRecord05, bitableParam);
                 break;
 

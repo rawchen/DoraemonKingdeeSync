@@ -452,4 +452,15 @@ public class StringUtil {
         BigDecimal bigDecimal = new BigDecimal(excludingTaxAmount);
         return bigDecimal.divide(BigDecimal.ONE, 2 , RoundingMode.HALF_UP).toString();
     }
+
+    public static String subShopName(String shopName) {
+        if (StrUtil.isEmpty(shopName)) {
+            return "";
+        }
+        if (shopName.contains("-")) {
+            return shopName.substring(0, shopName.indexOf("-"));
+        } else {
+            return shopName;
+        }
+    }
 }
