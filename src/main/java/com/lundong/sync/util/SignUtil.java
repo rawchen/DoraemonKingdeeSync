@@ -34,35 +34,56 @@ public class SignUtil {
      */
     public static String getAccessToken(String appId, String appSecret) {
 
-        if (!StrUtil.isEmpty(Constants.ACCESS_TOKEN)) {
-            return Constants.ACCESS_TOKEN;
-        }
+//        if (!StrUtil.isEmpty(Constants.ACCESS_TOKEN)) {
+//            return Constants.ACCESS_TOKEN;
+//        }
         JSONObject object = new JSONObject();
         object.put("app_id", appId);
         object.put("app_secret", appSecret);
-        try {
-            HttpResponse execute = HttpRequest.post("https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal")
-                    .form(object)
-                    .execute();
-            String resultStr = execute.body();
-            execute.close();
-            if (StringUtils.isNotEmpty(resultStr)) {
-                JSONObject resultObject = (JSONObject) JSON.parse(resultStr);
-                if (resultObject.getInteger("code") != 0) {
-                    log.error("获取tenant_access_token失败：{}", resultStr);
-                    return "";
-                } else {
-                    String tenantAccessToken = resultObject.getString("tenant_access_token");
-                    if (tenantAccessToken != null) {
-                        return tenantAccessToken;
+        String resultStr = "";
+        JSONObject resultObject = null;
+        for (int i = 0; i < 3; i++) {
+            try {
+                HttpResponse execute = HttpRequest.post("https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal")
+                        .form(object)
+                        .execute();
+                resultStr = execute.body();
+                execute.close();
+                if (StringUtils.isNotEmpty(resultStr)) {
+                    resultObject = JSON.parseObject(resultStr);
+                    if (resultObject.getInteger("code") != 0) {
+                        log.error("获取tenant_access_token失败，重试 {} 次, body: {}", i + 1, resultStr);
+                        try {
+                            Thread.sleep(2000);
+                        } catch (InterruptedException ecp) {
+                            log.error("sleep异常", ecp);
+                        }
                     }
                 }
+            } catch (Exception e) {
+                log.error("获取tenant_access_token异常，重试 {} 次, message: {}, body: {}", i + 1, e.getMessage(), resultStr);
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException ecp) {
+                    log.error("sleep异常", ecp);
+                }
             }
-            return "";
-        } catch (Exception e) {
-            log.error("获取tenant_access_token异常", e);
-            return "";
+            if (resultObject != null && resultObject.getInteger("code") == 0) {
+                break;
+            }
         }
+        // 重试完检测
+        if (resultObject == null || resultObject.getInteger("code") != 0) {
+            log.error("重试3次获取tenant_access_token后都失败");
+            return "";
+        } else {
+            String tenantAccessToken = resultObject.getString("tenant_access_token");
+            if (tenantAccessToken != null) {
+                return tenantAccessToken;
+            }
+        }
+        log.error("access_token获取不成功: {}", resultStr);
+        return "";
     }
 
     /**
@@ -108,8 +129,7 @@ public class SignUtil {
      * @return
      */
     public static String getFeishuUserName(String userId) {
-        String accessToken = getAccessToken(Constants.APP_ID_FEISHU, Constants.APP_SECRET_FEISHU);
-        return getFeishuUserName(accessToken, userId);
+        return getFeishuUserName(Constants.ACCESS_TOKEN, userId);
     }
 
     /**
@@ -151,8 +171,7 @@ public class SignUtil {
      * @return
      */
     public static ApprovalInstance approvalInstanceDetail(String instanceId) {
-        String accessToken = getAccessToken(Constants.APP_ID_FEISHU, Constants.APP_SECRET_FEISHU);
-        return approvalInstanceDetail(accessToken, instanceId);
+        return approvalInstanceDetail(Constants.ACCESS_TOKEN, instanceId);
     }
 
     /**
@@ -166,42 +185,61 @@ public class SignUtil {
     public static <T> List<T> findBaseList(String accessToken, String appToken, String tableId, Class<T> tClass) {
         List<T> results = new ArrayList<>();
         Map<String, Object> param = new HashMap<>();
+        param.put("page_size", 500);
         boolean hasMore = true;
-        try {
-            while (hasMore) {
-                param.put("page_size", 500);
-                HttpResponse response = HttpRequest.get("https://open.feishu.cn/open-apis/bitable/v1/apps/" + appToken + "/tables/" + tableId + "/records")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .form(param)
-                        .execute();
-                String resultStr = response.body();
-                response.close();
-                log.info("列出记录接口: {}", resultStr.length() > 100 ? resultStr.substring(0, 100) + "..." : resultStr);
-//                Thread.sleep(2000L);
-                JSONObject jsonObject = JSON.parseObject(resultStr);
-                if (jsonObject.getInteger("code") != 0) {
-                    log.error("列出记录接口调用失败");
-                    return Collections.emptyList();
+
+        while (hasMore) {
+            JSONObject jsonObject = null;
+            String resultStr = "";
+            for (int i = 0; i < 3; i++) {
+                try {
+                    HttpResponse response = HttpRequest.get("https://open.feishu.cn/open-apis/bitable/v1/apps/" + appToken + "/tables/" + tableId + "/records")
+                            .header("Authorization", "Bearer " + accessToken)
+                            .form(param)
+                            .execute();
+                    resultStr = response.body();
+                    response.close();
+                    log.info("列出记录接口: {}", resultStr.length() > 100 ? resultStr.substring(0, 100) + "..." : resultStr);
+                    //                Thread.sleep(2000L);
+                    jsonObject = JSON.parseObject(resultStr);
+                } catch (Exception e) {
+                    log.error("接口请求失败，重试 {} 次, message: {}, body: {}", i + 1, e.getMessage(), resultStr);
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException ecp) {
+                        log.error("sleep异常", ecp);
+                    }
                 }
-                JSONObject data = (JSONObject) jsonObject.get("data");
-                JSONArray items = (JSONArray) data.get("items");
-                for (int i = 0; i < items.size(); i++) {
-                    JSONObject records = items.getJSONObject(i).getJSONObject("fields");
-                    T testEntity;
-                    testEntity = JSONObject.toJavaObject(records, tClass);
-                    StringUtil.bracketReplace(testEntity);
-                    StringUtil.clearSpecialSymbols(testEntity);
-                    results.add(testEntity);
-                }
-                if ((boolean) data.get("has_more")) {
-                    param.put("page_token", data.getString("page_token"));
-                } else {
-                    hasMore = false;
+                if (jsonObject != null && jsonObject.getInteger("code") != 0) {
+                    // access_token过期
+                    if (jsonObject.getInteger("code") == 99991663) {
+                        Constants.ACCESS_TOKEN = SignUtil.getAccessToken(Constants.APP_ID_FEISHU, Constants.APP_SECRET_FEISHU);
+                        accessToken = Constants.ACCESS_TOKEN;
+                    }
+                    log.error("接口请求失败，重试 {} 次, body: {}", i + 1, resultStr);
+                } else if (jsonObject != null && jsonObject.getInteger("code") == 0) {
+                    break;
                 }
             }
-        } catch (Exception e) {
-            log.info("列出记录接口调用异常", e);
-            return Collections.emptyList();
+            if (jsonObject == null || jsonObject.getInteger("code") != 0) {
+                log.error("列出记录接口调用失败");
+                return Collections.emptyList();
+            }
+            JSONObject data = jsonObject.getJSONObject("data");
+            JSONArray items = data.getJSONArray("items");
+            for (int i = 0; i < items.size(); i++) {
+                JSONObject records = items.getJSONObject(i).getJSONObject("fields");
+                T testEntity;
+                testEntity = JSONObject.toJavaObject(records, tClass);
+                StringUtil.bracketReplace(testEntity);
+                StringUtil.clearSpecialSymbols(testEntity);
+                results.add(testEntity);
+            }
+            if ((boolean) data.get("has_more")) {
+                param.put("page_token", data.getString("page_token"));
+            } else {
+                hasMore = false;
+            }
         }
         return results;
     }
@@ -214,8 +252,7 @@ public class SignUtil {
      * @return
      */
     public static <T> List<T> findBaseList(String appToken, String tableId, Class<T> tClass) {
-        String accessToken = getAccessToken(Constants.APP_ID_FEISHU, Constants.APP_SECRET_FEISHU);
-        return findBaseList(accessToken, appToken, tableId, tClass);
+        return findBaseList(Constants.ACCESS_TOKEN, appToken, tableId, tClass);
     }
 
     /**
@@ -224,8 +261,8 @@ public class SignUtil {
      * @param accessToken
      * @param bitableParam
      * @param tClass
-     * @return
      * @param <T>
+     * @return
      */
     public static <T> T findBaseRecord(String accessToken, BitableParam bitableParam, Class<T> tClass) {
         T result;
@@ -254,8 +291,7 @@ public class SignUtil {
     }
 
     public static <T> T findBaseRecord(BitableParam bitableParam, Class<T> tClass) {
-        String accessToken = getAccessToken(Constants.APP_ID_FEISHU, Constants.APP_SECRET_FEISHU);
-        return findBaseRecord(accessToken, bitableParam, tClass);
+        return findBaseRecord(Constants.ACCESS_TOKEN, bitableParam, tClass);
     }
 
     public static List<HttpCookie> loginCookies() {
@@ -309,7 +345,6 @@ public class SignUtil {
         }
 
         for (VoucherDetail voucherDetail : voucher.getVoucherDetails()) {
-            System.out.println(voucherDetail);
             if (voucherDetail.getAccountId() == null) {
                 log.error("凭证列表中存在科目编码为null");
             }
@@ -342,6 +377,13 @@ public class SignUtil {
                 voucherDetail.setAmountFor("0");
             }
 
+            // 借贷金额都为0则不生成该凭证明细
+            if (("0".equals(voucherDetail.getCredit())
+                    || "0.00".equals(voucherDetail.getCredit()))
+                    && ("0".equals(voucherDetail.getDebit()))
+                    || "0.00".equals(voucherDetail.getDebit())) {
+                continue;
+            }
             StringUtil.replaceNullFieldToEmpty(voucher.getVoucherDetails());
 
             String detail = "{\"FEntryID\":0,\"FEXPLANATION\":\"摘要文本\",\"FACCOUNTID\":{\"FNumber\":\"科目编码文本\"}," +
@@ -388,6 +430,9 @@ public class SignUtil {
 
         saveVoucherData = saveVoucherData.replace("分录列表", getVoucherDetailsStr);
         log.info("保存入账凭证参数: {}", saveVoucherData);
+        for (VoucherDetail voucherDetail : voucher.getVoucherDetails()) {
+            System.out.println(voucherDetail);
+        }
         try {
             List<HttpCookie> httpCookies = loginCookies();
             String resultStr = HttpRequest.post(Constants.KINGDEE_API + Constants.KINGDEE_SAVE)
@@ -396,8 +441,8 @@ public class SignUtil {
                     .execute().body();
             log.info("金蝶凭证保存接口: {}", resultStr);
             JSONObject postObject = JSONObject.parseObject(resultStr);
-            JSONObject resultObject = (JSONObject) postObject.get("Result");
-            JSONObject responseStatus = (JSONObject) resultObject.get("ResponseStatus");
+            JSONObject resultObject = postObject.getJSONObject("Result");
+            JSONObject responseStatus = resultObject.getJSONObject("ResponseStatus");
             if (responseStatus.getBoolean("IsSuccess")) {
                 return resultObject.getString("Number");
             } else {
@@ -418,11 +463,10 @@ public class SignUtil {
                 statusStr = "否";
             }
             String body = "{\"fields\": {\"是否已生成\":\"" + statusStr + "\"}}";
-            String accessToken = getAccessToken(Constants.APP_ID_FEISHU, Constants.APP_SECRET_FEISHU);
             String resultStr = HttpRequest.put("https://open.feishu.cn/open-apis/bitable/v1/apps/" +
                             bitableParam.getAppToken() +
                             "/tables/" + bitableParam.getTableId() + "/records/" + bitableParam.getRecordId())
-                    .header("Authorization", "Bearer " + accessToken)
+                    .header("Authorization", "Bearer " + Constants.ACCESS_TOKEN)
                     .body(body)
                     .execute()
                     .body();

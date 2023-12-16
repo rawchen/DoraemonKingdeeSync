@@ -13,6 +13,8 @@ import java.util.List;
 @EnableConfigurationProperties
 public class Constants {
 
+    public static String ACCESS_TOKEN = "";
+
     // 飞书自建应用 App ID
     public final static String APP_ID_FEISHU = "cli_a45ee3c70cbxxxx";
 

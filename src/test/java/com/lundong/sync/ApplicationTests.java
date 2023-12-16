@@ -1,6 +1,7 @@
 package com.lundong.sync;
 
 import cn.hutool.core.util.ArrayUtil;
+import com.lundong.sync.config.Constants;
 import com.lundong.sync.entity.BitableParam;
 import com.lundong.sync.entity.base.Bitable;
 import com.lundong.sync.entity.bitable.approval.PaymentRequestOne;
@@ -144,5 +145,10 @@ class ApplicationTests {
         bitableParam.setRecordId("recoQiMj5Z");
         ConsumptionEstimation baseRecord = SignUtil.findBaseRecord(bitableParam, ConsumptionEstimation.class);
         System.out.println(baseRecord);
+    }
+
+    @Test
+    void t11() {
+        System.out.println(SignUtil.getAccessToken(Constants.APP_ID_FEISHU, Constants.APP_SECRET_FEISHU));
     }
 }
