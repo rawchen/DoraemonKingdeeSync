@@ -43,7 +43,7 @@ public class EventController {
             .onApprovalInstanceStatusUpdatedV1(new ApprovalInstanceStatusUpdatedV1Handler() {
                 @Override
                 public void handle(ApprovalInstanceStatusUpdatedEvent event) throws Exception {
-                    log.info("ApprovalInstanceStatusUpdatedV1: {}", Jsons.DEFAULT.toJson(event));
+                    log.info("ApprovalInstanceStatusUpdatedV1: {}", StringUtil.subLog(Jsons.DEFAULT.toJson(event), 300));
                     new Thread(() -> {
                         // 获取审批实例code
                         String approvalCode = event.getEvent().getApprovalCode();

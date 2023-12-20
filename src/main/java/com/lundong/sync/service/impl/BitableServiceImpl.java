@@ -32,6 +32,10 @@ public class BitableServiceImpl implements BitableService {
 
     @Override
     public <T> void processBitable(T bitable, BitableParam bitableParam) {
+        if (bitable == null) {
+            log.error("bitable参数为null");
+            return;
+        }
         if (IncomeEstimation.class.isAssignableFrom(bitable.getClass())) {
             // 收入暂估
             IncomeEstimation incomeEstimation = (IncomeEstimation) bitable;

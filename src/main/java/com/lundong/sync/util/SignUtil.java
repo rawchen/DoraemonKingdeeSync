@@ -147,7 +147,7 @@ public class SignUtil {
                     .header("Authorization", "Bearer " + accessToken)
                     .form(object)
                     .execute().body();
-            log.info("获取单个审批实例详情接口: {}", resultStr);
+            log.info("获取单个审批实例详情接口: {}", StringUtil.subLog(resultStr));
             if (StringUtils.isNotEmpty(resultStr)) {
                 JSONObject resultObject = JSON.parseObject(resultStr);
                 if (resultObject.getInteger("code") == 0) {
@@ -199,7 +199,7 @@ public class SignUtil {
                             .execute();
                     resultStr = response.body();
                     response.close();
-                    log.info("列出记录接口: {}", resultStr.length() > 100 ? resultStr.substring(0, 100) + "..." : resultStr);
+                    log.info("列出记录接口: {}", StringUtil.subLog(resultStr));
                     //                Thread.sleep(2000L);
                     jsonObject = JSON.parseObject(resultStr);
                 } catch (Exception e) {
@@ -222,7 +222,7 @@ public class SignUtil {
                 }
             }
             if (jsonObject == null || jsonObject.getInteger("code") != 0) {
-                log.error("列出记录接口调用失败");
+                log.error("列出记录接口调用失败，appToken: {}, tableId: {}", appToken, tableId);
                 return Collections.emptyList();
             }
             JSONObject data = jsonObject.getJSONObject("data");
@@ -274,8 +274,7 @@ public class SignUtil {
                     .execute()
                     .body();
             log.info("检索记录接口: {}", resultStr);
-//            log.info("检索记录接口: {}", resultStr.length() > 100 ? resultStr.substring(0, 100) + "..." : resultStr);
-            JSONObject jsonObject = JSON.parseObject(resultStr);
+            JSONObject jsonObject = JSON.parseObject(StringUtil.subLog(resultStr));
             if (jsonObject.getInteger("code") != 0) {
                 log.error("检索记录接口调用失败");
                 return null;
@@ -429,7 +428,7 @@ public class SignUtil {
         }
 
         saveVoucherData = saveVoucherData.replace("分录列表", getVoucherDetailsStr);
-        log.info("保存入账凭证参数: {}", saveVoucherData);
+        log.info("保存入账凭证参数: {}", StringUtil.subLog(saveVoucherData));
         for (VoucherDetail voucherDetail : voucher.getVoucherDetails()) {
             System.out.println(voucherDetail);
         }

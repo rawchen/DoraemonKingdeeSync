@@ -856,10 +856,10 @@ public class SystemServiceImpl implements SystemService {
                 raj1.setExplanation(raExplanation);
                 rad1.setExplanation(raExplanation);
 
-                String raAmount = StringUtil.calculateIncludeTax(StringUtil.positiveNumber(StringUtil.getValueByName(forms, "退款金额")), StringUtil.getValueByName(forms, "税率"));
+                String raAmount = StringUtil.calculateIncludeTax(StringUtil.getValueByName(forms, "退款金额"), StringUtil.getValueByName(forms, "税率"));
                 // 不含税金额
                 raj1.setDebit(raAmount);
-                raj1.setAmountFor(StringUtil.positiveNumber(StringUtil.getValueByName(forms, "退款金额")));
+                raj1.setAmountFor(raAmount);
                 rad1.setCredit(raAmount);
 
                 // 借贷方科目编码名称维度组装
