@@ -1,5 +1,6 @@
 package com.lundong.sync.execution;
 
+import cn.hutool.core.util.StrUtil;
 import com.lundong.sync.config.Constants;
 import com.lundong.sync.entity.base.*;
 import com.lundong.sync.entity.bitable.approval.SecondExceptionTable;
@@ -98,12 +99,14 @@ public class ScheduleTask {
     }
 
     /**
-     * 每隔105分钟刷新一个token
+     * 每隔10分钟刷新一个token
      */
-    @Scheduled(initialDelay = 105 * 60 * 1000, fixedRate = 105 * 60 * 1000)
+    @Scheduled(initialDelay = 10 * 60 * 1000, fixedRate = 10 * 60 * 1000)
     private void scheduleRefreshToken() {
         log.info("重新获得一个tenant_access_token");
-        Constants.ACCESS_TOKEN = SignUtil.getAccessToken(Constants.APP_ID_FEISHU, Constants.APP_SECRET_FEISHU);
-
+        String accessToken = SignUtil.getAccessToken(Constants.APP_ID_FEISHU, Constants.APP_SECRET_FEISHU);
+        if (!StrUtil.isEmpty(accessToken)) {
+            Constants.ACCESS_TOKEN = accessToken;
+        }
     }
 }

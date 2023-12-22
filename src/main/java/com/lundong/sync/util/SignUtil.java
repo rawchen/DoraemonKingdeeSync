@@ -104,7 +104,7 @@ public class SignUtil {
                     .form(param)
                     .execute()
                     .body();
-            log.info("获取飞书用户姓名接口: {}", resultStr);
+//            log.info("获取飞书用户姓名接口: {}", resultStr);
             JSONObject jsonObject = JSONObject.parseObject(resultStr);
             if (jsonObject.getInteger("code") == 0) {
                 JSONObject user = jsonObject.getJSONObject("data").getJSONObject("user");
@@ -199,11 +199,10 @@ public class SignUtil {
                             .execute();
                     resultStr = response.body();
                     response.close();
-                    log.info("列出记录接口: {}", StringUtil.subLog(resultStr));
-                    //                Thread.sleep(2000L);
+//                    log.info("列出记录接口: {}", StringUtil.subLog(resultStr));
                     jsonObject = JSON.parseObject(resultStr);
                 } catch (Exception e) {
-                    log.error("接口请求失败，重试 {} 次, message: {}, body: {}", i + 1, e.getMessage(), resultStr);
+                    log.error("列出记录接口请求失败，重试 {} 次, message: {}, body: {}", i + 1, e.getMessage(), resultStr);
                     try {
                         Thread.sleep(2000);
                     } catch (InterruptedException ecp) {
@@ -216,7 +215,7 @@ public class SignUtil {
                         Constants.ACCESS_TOKEN = SignUtil.getAccessToken(Constants.APP_ID_FEISHU, Constants.APP_SECRET_FEISHU);
                         accessToken = Constants.ACCESS_TOKEN;
                     }
-                    log.error("接口请求失败，重试 {} 次, body: {}", i + 1, resultStr);
+                    log.error("列出记录接口请求失败，重试 {} 次, body: {}", i + 1, resultStr);
                 } else if (jsonObject != null && jsonObject.getInteger("code") == 0) {
                     break;
                 }
@@ -273,8 +272,8 @@ public class SignUtil {
                     .header("Authorization", "Bearer " + accessToken)
                     .execute()
                     .body();
-            log.info("检索记录接口: {}", resultStr);
-            JSONObject jsonObject = JSON.parseObject(StringUtil.subLog(resultStr));
+            log.info("检索记录接口: {}", StringUtil.subLog(resultStr));
+            JSONObject jsonObject = JSON.parseObject(resultStr);
             if (jsonObject.getInteger("code") != 0) {
                 log.error("检索记录接口调用失败");
                 return null;
@@ -306,11 +305,40 @@ public class SignUtil {
                 "    \"password\": \"" + param.getPassword() + "\",\n" +
                 "    \"lcid\": \"2052\"\n" +
                 "}";
-        HttpResponse loginResponse = HttpRequest.post(loginUrl)
-                .body(loginJson)
-                .execute();
-        log.info("登录金蝶接口: {}", loginResponse.body());
-        return loginResponse.getCookies();
+        HttpResponse loginResponse = null;
+        String resultStr = "";
+        for (int i = 0; i < 3; i++) {
+            try {
+                loginResponse = HttpRequest.post(loginUrl)
+                        .body(loginJson)
+                        .execute();
+                resultStr = loginResponse.body();
+
+            } catch (Exception e) {
+                log.error("登录金蝶接口异常，重试 {} 次, message: {}, body: {}", i + 1, e.getMessage(), resultStr);
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException ecp) {
+                    log.error("sleep异常", ecp);
+                }
+            }
+            if (!resultStr.contains("\"LoginResultType\":1") || !resultStr.contains("\"IsSuccessByAPI\":true")) {
+                log.error("登录金蝶接口失败，重试 {} 次, body: {}", i + 1, resultStr);
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException ecp) {
+                    log.error("sleep异常", ecp);
+                }
+            } else {
+                break;
+            }
+        }
+        if (resultStr.contains("\"LoginResultType\":1") && resultStr.contains("\"IsSuccessByAPI\":true")) {
+            return loginResponse.getCookies();
+        } else {
+            log.error("登录金蝶接口多次重试后失败: {}", resultStr);
+            return null;
+        }
     }
 
     public static String saveVoucher(Voucher voucher) {
@@ -345,7 +373,8 @@ public class SignUtil {
 
         for (VoucherDetail voucherDetail : voucher.getVoucherDetails()) {
             if (voucherDetail.getAccountId() == null) {
-                log.error("凭证列表中存在科目编码为null");
+                log.error("凭证列表中存在科目编码为null（映射表中科目为空）");
+                return null;
             }
         }
 
@@ -432,8 +461,11 @@ public class SignUtil {
         for (VoucherDetail voucherDetail : voucher.getVoucherDetails()) {
             System.out.println(voucherDetail);
         }
+        List<HttpCookie> httpCookies = loginCookies();
+        if (httpCookies == null) {
+            return null;
+        }
         try {
-            List<HttpCookie> httpCookies = loginCookies();
             String resultStr = HttpRequest.post(Constants.KINGDEE_API + Constants.KINGDEE_SAVE)
                     .body(saveVoucherData)
                     .cookie(httpCookies)

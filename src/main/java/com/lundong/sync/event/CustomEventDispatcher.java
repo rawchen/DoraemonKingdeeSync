@@ -79,8 +79,8 @@ public class CustomEventDispatcher implements IHandler {
     }
 
     public String parseReq(EventReq eventReq) throws UnsupportedEncodingException {
-        log.info("event req,header:{},body:{}", Jsons.LONG_TO_STR.toJson(eventReq.getHeaders()),
-                new String(eventReq.getBody(), StandardCharsets.UTF_8));
+//        log.info("event req,header:{},body:{}", Jsons.LONG_TO_STR.toJson(eventReq.getHeaders()),
+//                new String(eventReq.getBody(), StandardCharsets.UTF_8));
         if (!Strings.isEmpty(encryptKey)) {
             Fuzzy fuzzy = Jsons.DEFAULT.fromJson(new String(eventReq.getBody(), StandardCharsets.UTF_8), Fuzzy.class);
             if (fuzzy == null || Strings.isEmpty(fuzzy.getEncrypt())) {

@@ -64,7 +64,7 @@ public class SystemServiceImpl implements SystemService {
                     voucher.setDate(year + "-" + month + "-" + day);
                     voucher.setVoucherGroupId(VoucherGroupIdEnum.PRE003.getType());
                     List<VoucherDetail> voucherDetails = new ArrayList<>();
-                    List<List<ApprovalInstanceForm>> formListDetails = StringUtil.getFormDetails(forms, "明细");
+                    List<List<ApprovalInstanceForm>> formListDetails = StringUtil.getFormDetails(forms, "付款明细");
                     if (ArrayUtil.isEmpty(formListDetails)) {
                         log.error("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(forms));
                         return;
@@ -235,7 +235,7 @@ public class SystemServiceImpl implements SystemService {
                     voucher.setDate(year + "-" + month + "-" + day);
                     voucher.setVoucherGroupId(VoucherGroupIdEnum.PRE003.getType());
                     List<VoucherDetail> voucherDetails = new ArrayList<>();
-                    List<List<ApprovalInstanceForm>> formListDetails = StringUtil.getFormDetails(forms, "明细");
+                    List<List<ApprovalInstanceForm>> formListDetails = StringUtil.getFormDetails(forms, "付款明细");
                     if (ArrayUtil.isEmpty(formListDetails)) {
                         log.error("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(forms));
                         return;
