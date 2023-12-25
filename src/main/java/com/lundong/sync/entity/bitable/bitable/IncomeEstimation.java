@@ -41,4 +41,10 @@ public class IncomeEstimation {
 
     @JSONField(name = "是否已生成")
     private String hasGenerate;
+
+    @JSONField(name = "是否已冲销")
+    private String hasWriteOff;
+
+    @JSONField(name = "冲销日期")
+    private String writeOffDate;
 }

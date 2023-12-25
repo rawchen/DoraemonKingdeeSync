@@ -10,6 +10,7 @@ import com.lundong.sync.entity.bitable.bitable.*;
 import com.lundong.sync.entity.kingdee.AccountingDimension;
 import com.lundong.sync.entity.kingdee.Voucher;
 import com.lundong.sync.entity.kingdee.VoucherDetail;
+import com.lundong.sync.enums.StatusFieldEnum;
 import com.lundong.sync.enums.VoucherGroupIdEnum;
 import com.lundong.sync.service.BitableService;
 import com.lundong.sync.util.ArrayUtil;
@@ -104,7 +105,7 @@ public class BitableServiceImpl implements BitableService {
                 voucherDetails.add(voucherDetailCreditTwo);
 
                 voucher.setVoucherDetails(voucherDetails);
-                SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, incomeEstimation.getGenerationDate()), bitableParam);
+                SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, incomeEstimation.getGenerationDate()), bitableParam, StatusFieldEnum.CREATED.getCode());
             }
         } else if (ConsumptionEstimation.class.isAssignableFrom(bitable.getClass())) {
             // 消耗暂估
@@ -187,7 +188,7 @@ public class BitableServiceImpl implements BitableService {
                 voucherDetails.add(voucherDetailCreditTwo);
 
                 voucher.setVoucherDetails(voucherDetails);
-                SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, consumptionEstimation.getGenerationDate()), bitableParam);
+                SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, consumptionEstimation.getGenerationDate()), bitableParam, StatusFieldEnum.CREATED.getCode());
             }
         } else if (OtherAmortization.class.isAssignableFrom(bitable.getClass())) {
             // 其他摊销
@@ -252,7 +253,7 @@ public class BitableServiceImpl implements BitableService {
                 voucherDetails.add(voucherDetailCreditOne);
 
                 voucher.setVoucherDetails(voucherDetails);
-                SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, otherAmortization.getGenerationDate()), bitableParam);
+                SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, otherAmortization.getGenerationDate()), bitableParam, StatusFieldEnum.CREATED.getCode());
             }
         } else if (DeferRentPropertyManagement.class.isAssignableFrom(bitable.getClass())) {
             // 房租及物业-待摊
@@ -295,7 +296,7 @@ public class BitableServiceImpl implements BitableService {
                 voucherDetails.add(d1);
 
                 voucher.setVoucherDetails(voucherDetails);
-                SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, defer.getGenerationDate()), bitableParam);
+                SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, defer.getGenerationDate()), bitableParam, StatusFieldEnum.CREATED.getCode());
             }
         } else if (DeferRenovation.class.isAssignableFrom(bitable.getClass())) {
             // 长期待摊-装修
@@ -338,7 +339,92 @@ public class BitableServiceImpl implements BitableService {
                 voucherDetails.add(d1);
 
                 voucher.setVoucherDetails(voucherDetails);
-                SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, defer.getGenerationDate()), bitableParam);
+                SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, defer.getGenerationDate()), bitableParam, StatusFieldEnum.CREATED.getCode());
+            }
+        }
+    }
+
+    /**
+     * 生成审批单并处理状态（冲销）
+     *
+     * @param bitable
+     * @param bitableParam
+     * @param <T>
+     */
+    @Override
+    public <T> void processBitableWriteOff(T bitable, BitableParam bitableParam) {
+        if (bitable == null) {
+            log.error("bitable参数为null");
+            return;
+        }
+        if (IncomeEstimation.class.isAssignableFrom(bitable.getClass())) {
+            // 收入暂估冲销
+            IncomeEstimation incomeEstimation = (IncomeEstimation) bitable;
+            if ("是".equals(incomeEstimation.getHasWriteOff())) {
+                log.info("已生成过该凭证: {}", bitableParam);
+            } else {
+                Voucher voucher = new Voucher();
+                List<Integer> timeList = StringUtil.timestampToYearMonthDay(incomeEstimation.getWriteOffDate());
+                int year = timeList.get(0);
+                int month = timeList.get(1);
+                int day = timeList.get(2);
+                voucher.setDate(year + "-" + month + "-" + day);
+                voucher.setVoucherGroupId(VoucherGroupIdEnum.PRE004.getType());
+                VoucherDetail j1 = new VoucherDetail();
+                VoucherDetail d1 = new VoucherDetail();
+                VoucherDetail d2 = new VoucherDetail();
+
+                List<BrandShopBusiness> accountingDimensionBaseList = Constants.LIST_TABLE_26;
+                List<Bitable> accountMappingBaseList = Constants.LIST_TABLE_27;
+                accountingDimensionBaseList = accountingDimensionBaseList.stream().filter(n -> incomeEstimation.getDesc().equals(n.getDesc())).collect(Collectors.toList());
+                accountMappingBaseList = accountMappingBaseList.stream().filter(n -> incomeEstimation.getIncomeType().equals(n.getIncomeType())).collect(Collectors.toList());
+                BrandShopBusiness bitableAccountingDimension;
+                Bitable bitableAccountMapping;
+                if (ArrayUtil.isEmpty(accountingDimensionBaseList) || accountingDimensionBaseList.size() > 1) {
+                    log.error("存在争议的核算维度映射，请检查参数是否在映射表匹配。Store description：{}", incomeEstimation.getDesc());
+                    return;
+                } else {
+                    bitableAccountingDimension = accountingDimensionBaseList.get(0);
+                }
+                if (ArrayUtil.isEmpty(accountMappingBaseList) || accountMappingBaseList.size() > 1) {
+                    log.error("存在争议的科目映射，请检查参数是否在映射表匹配。收入类型：{}", incomeEstimation.getIncomeType());
+                    return;
+                } else {
+                    bitableAccountMapping = accountMappingBaseList.get(0);
+                }
+
+                // 构建
+                String explanation = ("冲销收入暂估") +
+                        "&" + incomeEstimation.getYear() + incomeEstimation.getMonth() +
+                        "&" + bitableAccountingDimension.getCustomName() +
+                        "&" + incomeEstimation.getDesc();
+                j1.setExplanation(explanation);
+                d1.setExplanation(explanation);
+                d2.setExplanation(explanation);
+                j1.setAmountFor(StringUtil.negate(incomeEstimation.getAmountIncludingTaxAmount()));
+                j1.setDebit(StringUtil.negate(incomeEstimation.getAmountIncludingTaxAmount())); // 含税金额
+                d1.setCredit(StringUtil.negate(incomeEstimation.getExcludingTaxAmount())); // 不含税金额
+                d2.setCredit(StringUtil.negate(incomeEstimation.getTaxes())); // 税金
+
+                List<VoucherDetail> voucherDetails = new ArrayList<>();
+                // 借贷方科目编码名称维度组装
+                j1.setAccountId(bitableAccountMapping.getDebitAccountCodeOne());
+                String debitAccountingDimensionOne = bitableAccountMapping.getDebitAccountingDimensionOne();
+                VoucherDetail voucherDetailDebitOne = getAccountingDimensionParam(bitableAccountingDimension, j1, debitAccountingDimensionOne);
+                voucherDetails.add(voucherDetailDebitOne);
+
+                d1.setAccountId(bitableAccountMapping.getCreditAccountCodeOne());
+                String creditAccountingDimensionOne = bitableAccountMapping.getCreditAccountingDimensionOne();
+                VoucherDetail voucherDetailCreditOne = getAccountingDimensionParam(bitableAccountingDimension, d1, creditAccountingDimensionOne);
+                voucherDetails.add(voucherDetailCreditOne);
+
+                d2.setAccountId(bitableAccountMapping.getCreditAccountCodeTwo());
+                String creditAccountingDimensionTwo = bitableAccountMapping.getCreditAccountingDimensionTwo();
+                VoucherDetail voucherDetailCreditTwo = getAccountingDimensionParam(bitableAccountingDimension, d2, creditAccountingDimensionTwo);
+                voucherDetails.add(voucherDetailCreditTwo);
+
+                voucher.setVoucherDetails(voucherDetails);
+                SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, incomeEstimation.getWriteOffDate()), bitableParam, StatusFieldEnum.WRITE_OFF.getCode());
             }
         }
     }

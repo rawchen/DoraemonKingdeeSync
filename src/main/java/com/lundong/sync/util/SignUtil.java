@@ -15,6 +15,7 @@ import com.lundong.sync.entity.kingdee.Voucher;
 import com.lundong.sync.entity.kingdee.VoucherDetail;
 import com.lundong.sync.enums.CurrencyIdEnum;
 import com.lundong.sync.enums.ExchangeRateTypeEnum;
+import com.lundong.sync.enums.StatusFieldEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
@@ -486,14 +487,20 @@ public class SignUtil {
         return null;
     }
 
-    public static void updateHasGenerate(String number, BitableParam bitableParam) {
+    public static void updateHasGenerate(String number, BitableParam bitableParam, Integer type) {
+        String statusFieldStr = "";
+        if (StatusFieldEnum.CREATED.getCode() == type) {
+            statusFieldStr = "是否已生成";
+        } else {
+            statusFieldStr = "是否已冲销";
+        }
         try {
             String statusStr = "是";
             if (StrUtil.isEmpty(number)) {
                 log.error("修改状态失败，创建凭证出现错误");
                 statusStr = "否";
             }
-            String body = "{\"fields\": {\"是否已生成\":\"" + statusStr + "\"}}";
+            String body = "{\"fields\": {\"" + statusFieldStr + "\":\"" + statusStr + "\"}}";
             String resultStr = HttpRequest.put("https://open.feishu.cn/open-apis/bitable/v1/apps/" +
                             bitableParam.getAppToken() +
                             "/tables/" + bitableParam.getTableId() + "/records/" + bitableParam.getRecordId())

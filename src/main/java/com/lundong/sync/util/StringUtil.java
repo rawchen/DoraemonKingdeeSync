@@ -468,4 +468,9 @@ public class StringUtil {
         }
         return resultStr.length() > number ? resultStr.substring(0, number) + "..." : resultStr;
     }
+
+    public static String negate(String amount) {
+        BigDecimal negate = new BigDecimal(amount).negate();
+        return negate.toString();
+    }
 }

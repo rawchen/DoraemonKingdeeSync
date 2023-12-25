@@ -17,4 +17,13 @@ public interface BitableService {
      * @param <T>
      */
     <T> void processBitable(T bitable, BitableParam bitableParam);
+
+    /**
+     * 生成审批单并处理状态（冲销）
+     *
+     * @param bitable
+     * @param bitableParam
+     * @param <T>
+     */
+    <T> void processBitableWriteOff(T bitable, BitableParam bitableParam);
 }

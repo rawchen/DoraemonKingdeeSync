@@ -10,6 +10,7 @@ import com.lundong.sync.entity.bitable.bitable.IncomeEstimation;
 import com.lundong.sync.entity.kingdee.AccountingDimension;
 import com.lundong.sync.entity.kingdee.Voucher;
 import com.lundong.sync.entity.kingdee.VoucherDetail;
+import com.lundong.sync.enums.StatusFieldEnum;
 import com.lundong.sync.service.SystemService;
 import com.lundong.sync.util.SignUtil;
 import com.lundong.sync.util.StringUtil;
@@ -134,7 +135,7 @@ class ApplicationTests {
         bitableParam.setAppToken("Aw02btCEVa3GuBskRUfcSNelnI8");
         bitableParam.setTableId("tblXtdpvOXX9Jweq");
         bitableParam.setRecordId("recncnIEwm");
-        SignUtil.updateHasGenerate("1", bitableParam);
+        SignUtil.updateHasGenerate("1", bitableParam, StatusFieldEnum.CREATED.getCode());
     }
 
     @Test

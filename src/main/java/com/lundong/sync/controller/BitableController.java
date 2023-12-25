@@ -7,7 +7,9 @@ import com.lundong.sync.service.BitableService;
 import com.lundong.sync.util.SignUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * @author shuangquan.chen
@@ -52,6 +54,21 @@ public class BitableController {
                 bitableService.processBitable(baseRecord05, bitableParam);
                 break;
 
+        }
+    }
+
+    @RequestMapping(value = "write_off")
+    public void writeOff(@RequestParam("app_token") String appToken,
+                              @RequestParam("table_id") String tableId,
+                              @RequestParam("record_id") String recordId) throws Exception {
+        BitableParam bitableParam = new BitableParam();
+        bitableParam.setAppToken(appToken);
+        bitableParam.setTableId(tableId);
+        bitableParam.setRecordId(recordId);
+        log.info("生成参数: appToken: {}, tableId: {}, recordId: {}", appToken, tableId, recordId);
+        if (BitableTypeEnum.toType(tableId) == BitableTypeEnum.TABLE_ID_INCOME_ESTIMATION) {
+            IncomeEstimation baseRecord01 = SignUtil.findBaseRecord(bitableParam, IncomeEstimation.class);
+            bitableService.processBitableWriteOff(baseRecord01, bitableParam);
         }
     }
 }
