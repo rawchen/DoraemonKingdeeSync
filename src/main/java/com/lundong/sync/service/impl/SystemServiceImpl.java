@@ -251,7 +251,7 @@ public class SystemServiceImpl implements SystemService {
                         AccountingDimension accountingDimension = new AccountingDimension();
                         List<Employee> employees = Constants.LIST_TABLE_05;
                         for (Employee employee : employees) {
-                            if (employeeName.equals(employee.getEmployeeName())) {
+                            if (StringUtil.getValueByName(forms, "收款人（单位）全称").equals(employee.getEmployeeName())) {
                                 accountingDimension.setFflex7(employee.getEmployeeCode());
                                 break;
                             }
@@ -366,17 +366,17 @@ public class SystemServiceImpl implements SystemService {
                         // 借贷方科目编码名称维度组装
                         j1.setAccountId(bitable.getDebitAccountCodeOne());
                         String debitAccountingDimensionOne = bitable.getDebitAccountingDimensionOne();
-                        VoucherDetail voucherDetailDebitOne = getAccountingDimensionParam(forms, employeeName, formDetails, j1, debitAccountingDimensionOne);
+                        VoucherDetail voucherDetailDebitOne = getAccountingDimensionParam(forms, StringUtil.getValueByName(forms, "收款人（单位）全称"), formDetails, j1, debitAccountingDimensionOne);
                         voucherTwoDetails.add(voucherDetailDebitOne);
 
                         j2.setAccountId(bitable.getDebitAccountCodeTwo());
                         String debitAccountingDimensionTwo = bitable.getDebitAccountingDimensionTwo();
-                        VoucherDetail voucherDetailDebitTwo = getAccountingDimensionParam(forms, employeeName, formDetails, j2, debitAccountingDimensionTwo);
+                        VoucherDetail voucherDetailDebitTwo = getAccountingDimensionParam(forms, StringUtil.getValueByName(forms, "收款人（单位）全称"), formDetails, j2, debitAccountingDimensionTwo);
                         voucherTwoDetails.add(voucherDetailDebitTwo);
 
                         d1.setAccountId(bitable.getCreditAccountCodeOne());
                         String creditAccountingDimensionOne = bitable.getCreditAccountingDimensionOne();
-                        VoucherDetail voucherDetailCreditOne = getAccountingDimensionParam(forms, employeeName, formDetails, d1, creditAccountingDimensionOne);
+                        VoucherDetail voucherDetailCreditOne = getAccountingDimensionParam(forms, StringUtil.getValueByName(forms, "收款人（单位）全称"), formDetails, d1, creditAccountingDimensionOne);
                         voucherTwoDetails.add(voucherDetailCreditOne);
                     }
 
