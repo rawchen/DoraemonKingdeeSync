@@ -183,7 +183,7 @@ public class SystemServiceImpl implements SystemService {
                         VoucherDetail j1 = new VoucherDetail();
                         VoucherDetail j2 = new VoucherDetail();
                         VoucherDetail d1 = new VoucherDetail();
-                        String explanation = (genLogicType == 2 ? "暂估成本" : "确认成本") +
+                        String explanation = (genLogicType == 1 || genLogicType == 3 ? "确认成本" : "暂估成本") +
                                 "&" + StringUtil.getValueByName(forms, "收款人（单位）全称") +
                                 "&" + StringUtil.getValueByName(formDetails, "所属品牌") +
                                 "&" + StringUtil.getValueByName(formDetails, "费用归属年份") + StringUtil.getValueByName(formDetails, "费用归属月份") +

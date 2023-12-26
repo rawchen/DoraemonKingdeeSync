@@ -396,6 +396,12 @@ public class SignUtil {
             return null;
         }
         for (VoucherDetail voucherDetail : voucher.getVoucherDetails()) {
+
+            String explanation = voucherDetail.getExplanation();
+            if (!StrUtil.isEmpty(explanation)) {
+                voucherDetail.setExplanation(explanation.replace("\\", "\\\\").replace("	", " ").replace("\"", "").replace("\n", "").replace("\r", "").replace("\t", "").replace(" ", ""));
+            }
+
             if (voucherDetail.getDebit() == null) {
                 voucherDetail.setDebit("0");
             }
@@ -409,8 +415,8 @@ public class SignUtil {
             // 借贷金额都为0则不生成该凭证明细
             if (("0".equals(voucherDetail.getCredit())
                     || "0.00".equals(voucherDetail.getCredit()))
-                    && ("0".equals(voucherDetail.getDebit()))
-                    || "0.00".equals(voucherDetail.getDebit())) {
+                    && (("0".equals(voucherDetail.getDebit()))
+                    || "0.00".equals(voucherDetail.getDebit()))) {
                 continue;
             }
             StringUtil.replaceNullFieldToEmpty(voucher.getVoucherDetails());
