@@ -12,13 +12,13 @@ import lombok.Data;
 @Data
 public class IncomeEstimation {
 
-    @JSONField(name = "Year")
+    @JSONField(name = "年")
     private String year;
 
-    @JSONField(name = "month")
+    @JSONField(name = "月")
     private String month;
 
-    @JSONField(name = "Store description")
+    @JSONField(name = "品牌")
     private String desc;
 
     @JSONField(name = "收入类型")

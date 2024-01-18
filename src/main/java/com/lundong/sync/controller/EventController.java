@@ -44,7 +44,7 @@ public class EventController {
                 @Override
                 public void handle(ApprovalInstanceStatusUpdatedEvent event) throws Exception {
                     log.info("ApprovalInstanceStatusUpdatedV1: {}", StringUtil.subLog(Jsons.DEFAULT.toJson(event)));
-                    new Thread(() -> {
+                    Runnable worker = () -> {
                         // 获取审批实例code
                         String approvalCode = event.getEvent().getApprovalCode();
                         // 判断通过的审批code是否为定义的五个单，不是就退出
@@ -70,7 +70,8 @@ public class EventController {
                             systemService.processApprovalForm(result.getApprovalInstanceForms(), operateTime, approvalCode,
                                     result.getApprovalInstance().getSerialNumber());
                         }
-                    }).start();
+                    };
+                    Constants.queue.submitTask(worker);
                 }
             })
             .build();

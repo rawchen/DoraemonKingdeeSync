@@ -374,7 +374,7 @@ public class SignUtil {
 
         for (VoucherDetail voucherDetail : voucher.getVoucherDetails()) {
             if (voucherDetail.getAccountId() == null) {
-                log.error("凭证列表中存在科目编码为null（映射表中科目为空）");
+                log.error("凭证列表中存在科目编码为null（映射表中科目为空），审批名称：{} 飞书流程号：{} 多维表：{}", voucher.getApprovalName(), voucher.getSerialNumber(), voucher.getBitableParam());
                 return null;
             }
         }
@@ -392,7 +392,7 @@ public class SignUtil {
 
         StringBuilder getVoucherDetailsStr = new StringBuilder();
         if (ArrayUtil.isEmpty(voucher.getVoucherDetails())) {
-            log.error("入账凭证保存失败，入账凭证明细为空");
+            log.error("入账凭证保存失败，入账凭证明细为空，审批名称：{} 飞书流程号：{} 多维表：{}", voucher.getApprovalName(), voucher.getSerialNumber(), voucher.getBitableParam());
             return null;
         }
         for (VoucherDetail voucherDetail : voucher.getVoucherDetails()) {
@@ -466,7 +466,7 @@ public class SignUtil {
         saveVoucherData = saveVoucherData.replace("分录列表", getVoucherDetailsStr);
         log.info("保存入账凭证参数: {}", StringUtil.subLog(saveVoucherData));
         for (VoucherDetail voucherDetail : voucher.getVoucherDetails()) {
-            System.out.println(voucherDetail);
+            log.info("入账凭证对象: {}", voucherDetail.toString());
         }
         List<HttpCookie> httpCookies = loginCookies();
         if (httpCookies == null) {
@@ -477,18 +477,18 @@ public class SignUtil {
                     .body(saveVoucherData)
                     .cookie(httpCookies)
                     .execute().body();
-            log.info("金蝶凭证保存接口: {}", resultStr);
+            log.info("金蝶凭证保存接口: {}", StringUtil.subLog(resultStr));
             JSONObject postObject = JSONObject.parseObject(resultStr);
             JSONObject resultObject = postObject.getJSONObject("Result");
             JSONObject responseStatus = resultObject.getJSONObject("ResponseStatus");
             if (responseStatus.getBoolean("IsSuccess")) {
                 return resultObject.getString("Number");
             } else {
-                log.error("金蝶凭证保存接口错误: {}", resultStr);
+                log.error("金蝶凭证保存接口错误: {}，审批名称：{} 飞书流程号：{}，保存入账凭证参数: {}，多维表：{}", resultStr, voucher.getApprovalName(), voucher.getSerialNumber(), saveVoucherData, voucher.getBitableParam());
                 return null;
             }
         } catch (Exception e) {
-            log.error("金蝶凭证保存异常: ", e);
+            log.error("金蝶凭证保存异常: {}，审批名称：{} 飞书流程号：{} 多维表：{}", e.getMessage(), voucher.getApprovalName(), voucher.getSerialNumber(), voucher.getBitableParam());
         }
         return null;
     }

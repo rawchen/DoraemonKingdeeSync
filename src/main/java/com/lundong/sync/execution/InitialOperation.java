@@ -23,6 +23,9 @@ public class InitialOperation implements CommandLineRunner {
         // 初始化ACCESS_TOKEN
         Constants.ACCESS_TOKEN = SignUtil.getAccessToken(Constants.APP_ID_FEISHU, Constants.APP_SECRET_FEISHU);
         log.info("初始化ACCESS_TOKEN: {}", Constants.ACCESS_TOKEN);
+
+        Constants.queue.startProcessingTasks();
+        log.info("启动初始化任务队列");
     }
 
 }

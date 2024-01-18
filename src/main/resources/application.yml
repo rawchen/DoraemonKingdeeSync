@@ -3,3 +3,7 @@ server:
 spring:
   application:
     name: DoraemonKingdeeSync
+
+logging:
+  level:
+    org.apache.coyote.http11.Http11Processor: warn

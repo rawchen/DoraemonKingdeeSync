@@ -37,13 +37,15 @@ public class BitableServiceImpl implements BitableService {
             log.error("bitable参数为null");
             return;
         }
+        Voucher voucher = new Voucher();
+        voucher.setBitableParam(bitableParam);
         if (IncomeEstimation.class.isAssignableFrom(bitable.getClass())) {
             // 收入暂估
             IncomeEstimation incomeEstimation = (IncomeEstimation) bitable;
             if ("是".equals(incomeEstimation.getHasGenerate())) {
                 log.info("已生成过该凭证: {}", bitableParam);
             } else {
-                Voucher voucher = new Voucher();
+                voucher = new Voucher().setBitableParam(bitableParam);
                 List<Integer> timeList = StringUtil.timestampToYearMonthDay(incomeEstimation.getGenerationDate());
                 int year = timeList.get(0);
                 int month = timeList.get(1);
@@ -61,13 +63,13 @@ public class BitableServiceImpl implements BitableService {
                 BrandShopBusiness bitableAccountingDimension;
                 Bitable bitableAccountMapping;
                 if (ArrayUtil.isEmpty(accountingDimensionBaseList) || accountingDimensionBaseList.size() > 1) {
-                    log.error("存在争议的核算维度映射，请检查参数是否在映射表匹配。Store description：{}", incomeEstimation.getDesc());
+                    log.error("存在争议的核算维度映射，请检查参数是否在映射表匹配。品牌：{}, bitableParam: {}", incomeEstimation.getDesc(), bitableParam);
                     return;
                 } else {
                     bitableAccountingDimension = accountingDimensionBaseList.get(0);
                 }
                 if (ArrayUtil.isEmpty(accountMappingBaseList) || accountMappingBaseList.size() > 1) {
-                    log.error("存在争议的科目映射，请检查参数是否在映射表匹配。收入类型：{}", incomeEstimation.getIncomeType());
+                    log.error("存在争议的科目映射，请检查参数是否在映射表匹配。收入类型：{}, bitableParam: {}", incomeEstimation.getIncomeType(), bitableParam);
                     return;
                 } else {
                     bitableAccountMapping = accountMappingBaseList.get(0);
@@ -113,7 +115,7 @@ public class BitableServiceImpl implements BitableService {
             if ("是".equals(consumptionEstimation.getHasGenerate())) {
                 log.info("已生成过该凭证: {}", bitableParam);
             } else {
-                Voucher voucher = new Voucher();
+                voucher = new Voucher().setBitableParam(bitableParam);
                 List<Integer> timeList = StringUtil.timestampToYearMonthDay(consumptionEstimation.getGenerationDate());
                 int year = timeList.get(0);
                 int month = timeList.get(1);
@@ -136,14 +138,14 @@ public class BitableServiceImpl implements BitableService {
                 BrandShopBusiness bitableAccountingDimension;
                 Bitable bitableAccountMapping;
                 if (ArrayUtil.isEmpty(accountingDimensionBaseList) || accountingDimensionBaseList.size() > 1) {
-                    log.error("存在争议的核算维度映射，请检查参数是否在映射表匹配。店铺编码：{}", consumptionEstimation.getShopCode());
+                    log.error("存在争议的核算维度映射，请检查参数是否在映射表匹配。店铺编码：{}, bitableParam: {}", consumptionEstimation.getShopCode(), bitableParam);
                     return;
                 } else {
                     bitableAccountingDimension = accountingDimensionBaseList.get(0);
                 }
                 if (ArrayUtil.isEmpty(accountMappingBaseList) || accountMappingBaseList.size() > 1) {
-                    log.error("存在争议的科目映射，请检查参数是否在映射表匹配。消耗类型：{}, 客户/公司承担：{}",
-                            consumptionEstimation.getConsumptionType(), consumptionEstimation.getCustomerCompanyResponsible());
+                    log.error("存在争议的科目映射，请检查参数是否在映射表匹配。消耗类型：{}, 客户/公司承担：{}, bitableParam: {}",
+                            consumptionEstimation.getConsumptionType(), consumptionEstimation.getCustomerCompanyResponsible(), bitableParam);
                     return;
                 } else {
                     bitableAccountMapping = accountMappingBaseList.get(0);
@@ -196,7 +198,7 @@ public class BitableServiceImpl implements BitableService {
             if ("是".equals(otherAmortization.getHasGenerate())) {
                 log.info("已生成过该凭证: {}", bitableParam);
             } else {
-                Voucher voucher = new Voucher();
+                voucher = new Voucher().setBitableParam(bitableParam);
                 List<Integer> timeList = StringUtil.timestampToYearMonthDay(otherAmortization.getGenerationDate());
                 int year = timeList.get(0);
                 int month = timeList.get(1);
@@ -215,13 +217,13 @@ public class BitableServiceImpl implements BitableService {
                 BrandShopBusiness bitableAccountingDimension;
                 Bitable bitableAccountMapping;
                 if (ArrayUtil.isEmpty(accountingDimensionBaseList) || accountingDimensionBaseList.size() > 1) {
-                    log.error("存在争议的核算维度映射，请检查参数是否在映射表匹配。摊销项目：{}", otherAmortization.getAmortizationItems());
+                    log.error("存在争议的核算维度映射，请检查参数是否在映射表匹配。摊销项目：{}, bitableParam: {}", otherAmortization.getAmortizationItems(), bitableParam);
                     return;
                 } else {
                     bitableAccountingDimension = accountingDimensionBaseList.get(0);
                 }
                 if (ArrayUtil.isEmpty(accountMappingBaseList) || accountMappingBaseList.size() > 1) {
-                    log.error("存在争议的科目映射，请检查参数是否在映射表匹配。摊销项目：{}", otherAmortization.getAmortizationItems());
+                    log.error("存在争议的科目映射，请检查参数是否在映射表匹配。摊销项目：{}, bitableParam: {}", otherAmortization.getAmortizationItems(), bitableParam);
                     return;
                 } else {
                     bitableAccountMapping = accountMappingBaseList.get(0);
@@ -261,7 +263,7 @@ public class BitableServiceImpl implements BitableService {
             if ("是".equals(defer.getHasGenerate())) {
                 log.info("已生成过该凭证: {}", bitableParam);
             } else {
-                Voucher voucher = new Voucher();
+                voucher = new Voucher().setBitableParam(bitableParam);
                 List<Integer> timeList = StringUtil.timestampToYearMonthDay(defer.getGenerationDate());
                 int year = timeList.get(0);
                 int month = timeList.get(1);
@@ -304,7 +306,7 @@ public class BitableServiceImpl implements BitableService {
             if ("是".equals(defer.getHasGenerate())) {
                 log.info("已生成过该凭证: {}", bitableParam);
             } else {
-                Voucher voucher = new Voucher();
+                voucher = new Voucher().setBitableParam(bitableParam);
                 List<Integer> timeList = StringUtil.timestampToYearMonthDay(defer.getGenerationDate());
                 int year = timeList.get(0);
                 int month = timeList.get(1);
@@ -363,7 +365,7 @@ public class BitableServiceImpl implements BitableService {
             if ("是".equals(incomeEstimation.getHasWriteOff())) {
                 log.info("已生成过该凭证: {}", bitableParam);
             } else {
-                Voucher voucher = new Voucher();
+                Voucher voucher = new Voucher().setBitableParam(bitableParam);
                 List<Integer> timeList = StringUtil.timestampToYearMonthDay(incomeEstimation.getWriteOffDate());
                 int year = timeList.get(0);
                 int month = timeList.get(1);
@@ -381,13 +383,13 @@ public class BitableServiceImpl implements BitableService {
                 BrandShopBusiness bitableAccountingDimension;
                 Bitable bitableAccountMapping;
                 if (ArrayUtil.isEmpty(accountingDimensionBaseList) || accountingDimensionBaseList.size() > 1) {
-                    log.error("存在争议的核算维度映射，请检查参数是否在映射表匹配。Store description：{}", incomeEstimation.getDesc());
+                    log.error("存在争议的核算维度映射，请检查参数是否在映射表匹配。品牌：{}, bitableParam: {}", incomeEstimation.getDesc(), bitableParam);
                     return;
                 } else {
                     bitableAccountingDimension = accountingDimensionBaseList.get(0);
                 }
                 if (ArrayUtil.isEmpty(accountMappingBaseList) || accountMappingBaseList.size() > 1) {
-                    log.error("存在争议的科目映射，请检查参数是否在映射表匹配。收入类型：{}", incomeEstimation.getIncomeType());
+                    log.error("存在争议的科目映射，请检查参数是否在映射表匹配。收入类型：{}, bitableParam: {}", incomeEstimation.getIncomeType(), bitableParam);
                     return;
                 } else {
                     bitableAccountMapping = accountMappingBaseList.get(0);
