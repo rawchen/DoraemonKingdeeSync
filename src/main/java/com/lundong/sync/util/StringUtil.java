@@ -18,7 +18,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -472,5 +474,80 @@ public class StringUtil {
     public static String negate(String amount) {
         BigDecimal negate = new BigDecimal(amount).negate();
         return negate.toString();
+    }
+
+    public static String escape(String input) {
+        if (input == null) {
+            return "";
+        }
+
+        StringBuilder escaped = new StringBuilder();
+        for (char c : input.toCharArray()) {
+            switch (c) {
+                case '"':
+                    escaped.append("\\\"");
+                    break;
+                case '\\':
+                    escaped.append("\\\\");
+                    break;
+                case '	':
+                    escaped.append("    ");
+                    break;
+                case '\r':
+                case '\n':
+                    break;
+                default:
+                    escaped.append(c);
+            }
+        }
+        return escaped.toString();
+    }
+
+    public static String timestampToYearMonthDayHourMinuteSecond(String instanceOperateTime) {
+        LocalDateTime operateTime;
+        if (StrUtil.isEmpty(instanceOperateTime) || instanceOperateTime.length() != 13) {
+            log.error("13位时间戳格式出错：{}", instanceOperateTime);
+            operateTime = LocalDateTime.now();
+        } else {
+            long timestamp = Long.parseLong(instanceOperateTime);
+            operateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
+        }
+        return operateTime.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"));
+    }
+
+    public static String yearMonthDayHourMinuteSecondToTimestamp(String instanceOperateTime) {
+        LocalDateTime operateTime = LocalDateTime.now();
+        try {
+            operateTime = LocalDateTime.parse(instanceOperateTime, DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"));
+        } catch (Exception e) {
+            log.error("时间解析出错", e);
+        }
+        long milliseconds = operateTime.atZone(ZoneOffset.systemDefault()).toInstant().toEpochMilli();
+        return String.valueOf(milliseconds);
+    }
+
+
+        public static String processChineseTitleOrder(String json) {
+        json = json.replace("\"serialNumber\"", "\"飞书申请编号\"")
+                .replace("\"instanceCode\"", "\"审批实例ID\"")
+                .replace("\"approvalName\"", "\"审批名称\"")
+                .replace("\"instanceOperateTime\"", "\"审批操作日期\"")
+                .replace("\"syncType\"", "\"同步状态\"")
+                .replace("\"errorInfo\"", "\"错误信息\"")
+                .replace("\"hasGenerate\"", "\"重试状态\"")
+                .replace("\"retryErrorInfo\"", "\"重试错误信息\"")
+                .replace("\"generationDate\"", "\"重试日期\"");
+        return json;
+    }
+
+    public static String subExplanation(String resultStr, int number) {
+        if (StrUtil.isEmpty(resultStr)) {
+            return "";
+        }
+        if (resultStr.length() > number) {
+            return resultStr.substring(0, number - 3) + "...";
+        } else {
+            return resultStr;
+        }
     }
 }

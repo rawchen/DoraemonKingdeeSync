@@ -1,9 +1,6 @@
 package com.lundong.sync.service;
 
-import com.lundong.sync.entity.approval.ApprovalInstanceForm;
-
-import java.time.LocalDateTime;
-import java.util.List;
+import com.lundong.sync.entity.ApprovalInstanceFormResult;
 
 /**
  * @author RawChen
@@ -15,8 +12,19 @@ public interface SystemService {
     /**
      * 处理审批单
      *
-     * @param forms
+     * @param result
      * @param approvalCode
+     * @param instanceCode
+     * @param instanceOperateTime
      */
-    void processApprovalForm(List<ApprovalInstanceForm> forms, LocalDateTime operateTime, String approvalCode, String serialNumber);
+    String processApprovalForm(ApprovalInstanceFormResult result, String approvalCode, String instanceCode, String instanceOperateTime);
+
+    /**
+     * 新增多维表格日志
+     *
+     * @param result
+     * @param save
+     * @param instanceOperateTime
+     */
+    void insertRecordLog(ApprovalInstanceFormResult result, String save, String instanceOperateTime);
 }

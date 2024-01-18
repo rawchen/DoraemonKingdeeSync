@@ -9,7 +9,6 @@ import com.lundong.sync.event.ApprovalInstanceStatusUpdatedV1Handler;
 import com.lundong.sync.event.CustomEventDispatcher;
 import com.lundong.sync.event.CustomServletAdapter;
 import com.lundong.sync.service.SystemService;
-import com.lundong.sync.util.ArrayUtil;
 import com.lundong.sync.util.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 
 /**
  * @author RawChen
@@ -58,17 +54,12 @@ public class EventController {
                         String instanceCode = event.getEvent().getInstanceCode();
                         String status = event.getEvent().getStatus();
                         String instanceOperateTime = event.getEvent().getInstanceOperateTime();
-                        long timestamp = Long.parseLong(instanceOperateTime);
-                        LocalDateTime operateTime = LocalDateTime.ofInstant(
-                                Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
+
                         if (ApprovalInstanceEnum.APPROVED.getType().equals(status)) {
                             // 根据审批实例ID查询审批单
                             ApprovalInstanceFormResult result = StringUtil.instanceToFormList(instanceCode);
-                            if (result.getApprovalInstance() == null | ArrayUtil.isEmpty(result.getApprovalInstanceForms())) {
-                                return;
-                            }
-                            systemService.processApprovalForm(result.getApprovalInstanceForms(), operateTime, approvalCode,
-                                    result.getApprovalInstance().getSerialNumber());
+                            String save = systemService.processApprovalForm(result, approvalCode, instanceCode, instanceOperateTime);
+                            systemService.insertRecordLog(result, save, instanceOperateTime);
                         }
                     };
                     Constants.queue.submitTask(worker);

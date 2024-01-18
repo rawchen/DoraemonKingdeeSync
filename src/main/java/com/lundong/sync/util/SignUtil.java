@@ -1,5 +1,6 @@
 package com.lundong.sync.util;
 
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
@@ -362,7 +363,7 @@ public class SignUtil {
         LocalDate now = LocalDate.now();
         int year;
         int month;
-        if (generationDate == null) {
+        if (StrUtil.isEmpty(generationDate)) {
             year = now.getYear();
             month = now.getMonthValue();
         } else {
@@ -375,7 +376,7 @@ public class SignUtil {
         for (VoucherDetail voucherDetail : voucher.getVoucherDetails()) {
             if (voucherDetail.getAccountId() == null) {
                 log.error("凭证列表中存在科目编码为null（映射表中科目为空），审批名称：{} 飞书流程号：{} 多维表：{}", voucher.getApprovalName(), voucher.getSerialNumber(), voucher.getBitableParam());
-                return null;
+                return StrUtil.format("凭证列表中存在科目编码为null（映射表中科目为空），审批名称：{} 飞书流程号：{} 多维表：{}", voucher.getApprovalName(), voucher.getSerialNumber(), voucher.getBitableParam());
             }
         }
 
@@ -393,7 +394,7 @@ public class SignUtil {
         StringBuilder getVoucherDetailsStr = new StringBuilder();
         if (ArrayUtil.isEmpty(voucher.getVoucherDetails())) {
             log.error("入账凭证保存失败，入账凭证明细为空，审批名称：{} 飞书流程号：{} 多维表：{}", voucher.getApprovalName(), voucher.getSerialNumber(), voucher.getBitableParam());
-            return null;
+            return StrUtil.format("入账凭证保存失败，入账凭证明细为空，审批名称：{} 飞书流程号：{} 多维表：{}", voucher.getApprovalName(), voucher.getSerialNumber(), voucher.getBitableParam());
         }
         for (VoucherDetail voucherDetail : voucher.getVoucherDetails()) {
 
@@ -410,6 +411,10 @@ public class SignUtil {
             }
             if (voucherDetail.getAmountFor() == null) {
                 voucherDetail.setAmountFor("0");
+            }
+
+            if (StrUtil.isNotEmpty(voucherDetail.getExplanation())) {
+                voucherDetail.setExplanation(StringUtil.subExplanation(voucherDetail.getExplanation(), 250));
             }
 
             // 借贷金额都为0则不生成该凭证明细
@@ -470,10 +475,12 @@ public class SignUtil {
         }
         List<HttpCookie> httpCookies = loginCookies();
         if (httpCookies == null) {
-            return null;
+            return "金蝶系统登录失败";
         }
+        String resultStr = "";
+        String exceptionMessage = "";
         try {
-            String resultStr = HttpRequest.post(Constants.KINGDEE_API + Constants.KINGDEE_SAVE)
+            resultStr = HttpRequest.post(Constants.KINGDEE_API + Constants.KINGDEE_SAVE)
                     .body(saveVoucherData)
                     .cookie(httpCookies)
                     .execute().body();
@@ -482,18 +489,23 @@ public class SignUtil {
             JSONObject resultObject = postObject.getJSONObject("Result");
             JSONObject responseStatus = resultObject.getJSONObject("ResponseStatus");
             if (responseStatus.getBoolean("IsSuccess")) {
-                return resultObject.getString("Number");
+//                return resultObject.getString("Number");
+                return "success";
             } else {
                 log.error("金蝶凭证保存接口错误: {}，审批名称：{} 飞书流程号：{}，保存入账凭证参数: {}，多维表：{}", resultStr, voucher.getApprovalName(), voucher.getSerialNumber(), saveVoucherData, voucher.getBitableParam());
-                return null;
+                return StrUtil.format("金蝶凭证保存接口错误: {}，审批名称：{} 飞书流程号：{}，保存入账凭证参数: {}，多维表：{}", resultStr, voucher.getApprovalName(), voucher.getSerialNumber(), saveVoucherData, voucher.getBitableParam());
             }
         } catch (Exception e) {
+            exceptionMessage = e.getMessage();
             log.error("金蝶凭证保存异常: {}，审批名称：{} 飞书流程号：{} 多维表：{}", e.getMessage(), voucher.getApprovalName(), voucher.getSerialNumber(), voucher.getBitableParam());
         }
-        return null;
+        if (StrUtil.isEmpty(resultStr) && StrUtil.isNotEmpty(exceptionMessage)) {
+            return StrUtil.format("金蝶凭证保存异常: {}，审批名称：{} 飞书流程号：{} 多维表：{}", exceptionMessage, voucher.getApprovalName(), voucher.getSerialNumber(), voucher.getBitableParam());
+        }
+        return "success";
     }
 
-    public static void updateHasGenerate(String number, BitableParam bitableParam, Integer type) {
+    public static void updateHasGenerate(String save, BitableParam bitableParam, Integer type) {
         String statusFieldStr = "";
         if (StatusFieldEnum.CREATED.getCode() == type) {
             statusFieldStr = "是否已生成";
@@ -502,7 +514,7 @@ public class SignUtil {
         }
         try {
             String statusStr = "是";
-            if (StrUtil.isEmpty(number)) {
+            if (!"success".equals(save)) {
                 log.error("修改状态失败，创建凭证出现错误");
                 statusStr = "否";
             }
@@ -521,6 +533,80 @@ public class SignUtil {
             }
         } catch (Exception e) {
             log.error("更新记录接口异常: ", e);
+        }
+    }
+
+    public static void updateHasGenerate(String save, BitableParam bitableParam) {
+        try {
+            String statusStr = "成功";
+            if (!"success".equals(save)) {
+                statusStr = "失败";
+            }
+            String successBody = "{\"fields\": {\"同步状态\":\"已同步\",\"重试状态\":\"" + statusStr + "\",\"重试错误信息\":\"\",\"重试日期\":\"" + DateUtil.format(DateUtil.date(), "yyyy/MM/dd HH:mm:ss") + "\"}}";
+            String failBody = "{\"fields\": {\"重试状态\":\"" + statusStr + "\",\"重试错误信息\":\"" + StringUtil.escape(save) + "\",\"重试日期\":\"" + DateUtil.format(DateUtil.date(), "yyyy-MM-dd HH:mm:ss") + "\"}}";
+            String resultStr = HttpRequest.put("https://open.feishu.cn/open-apis/bitable/v1/apps/" +
+                            bitableParam.getAppToken() +
+                            "/tables/" + bitableParam.getTableId() + "/records/" + bitableParam.getRecordId())
+                    .header("Authorization", "Bearer " + Constants.ACCESS_TOKEN)
+                    .body("success".equals(save) ? successBody : failBody)
+                    .execute()
+                    .body();
+            log.info("更新记录接口: {}", resultStr);
+            JSONObject jsonObject = JSON.parseObject(resultStr);
+            if (jsonObject.getInteger("code") != 0) {
+                log.error("更新记录接口失败: {}", resultStr);
+            }
+        } catch (Exception e) {
+            log.error("更新记录接口异常: ", e);
+        }
+    }
+
+    public static String insertRecord(String str, String appToken, String tableId) {
+        return insertRecord(Constants.ACCESS_TOKEN, str, appToken, tableId);
+    }
+
+    public static String insertRecord(String accessToken, String str, String appToken, String tableId) {
+        String resultStr = "";
+        JSONObject resultObject = null;
+        for (int i = 0; i < 3; i++) {
+            try {
+                resultStr = HttpRequest.post("https://open.feishu.cn/open-apis/bitable/v1/apps/" + appToken + "/tables/" + tableId + "/records")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .body(str)
+                        .execute()
+                        .body();
+                log.info("resultStr: {}", StringUtil.subLog(resultStr));
+                if (StringUtils.isNotEmpty(resultStr)) {
+                    resultObject = (JSONObject) JSON.parse(resultStr);
+                    if (resultObject.getInteger("code") != 0) {
+                        log.error("新增记录失败，重试 {} 次, body: {}", i + 1, resultStr);
+                        try {
+                            Thread.sleep(2000);
+                        } catch (InterruptedException ecp) {
+                            log.error("sleep异常", ecp);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error("新增记录接口调用异常，重试 {} 次, message: {}, body: {}", i + 1, e.getMessage(), resultStr);
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException ecp) {
+                    log.error("sleep异常", ecp);
+                }
+            }
+            if (resultObject != null && resultObject.getInteger("code") == 0) {
+                break;
+            }
+        }
+        if (resultObject == null || resultObject.getInteger("code") != 0) {
+            log.error("重试3次新增记录接口调用后都失败");
+            return "";
+        } else {
+            // todo 是否记录今天插入成功，防止一天多次执行
+            JSONObject data = (JSONObject) resultObject.get("data");
+            JSONObject record = (JSONObject) data.get("record");
+            return record.getString("record_id");
         }
     }
 }

@@ -51,6 +51,9 @@ public class ApprovalInstance {
 	@JSONField(name = "approval_code")
 	private String approvalCode;
 
+	@JSONField(name = "instance_code")
+	private String instanceCode;
+
 	@JSONField(name = "reverted")
 	private boolean reverted;
 

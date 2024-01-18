@@ -20,7 +20,9 @@ import com.lundong.sync.util.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,15 +39,27 @@ public class SystemServiceImpl implements SystemService {
     /**
      * 处理审批单
      *
-     * @param forms        审批表单列表
-     * @param operateTime  审批状态变更操作时间
-     * @param approvalCode 审批CODE
-     * @param serialNumber 飞书审批编号
+     * @param approvalCode        审批CODE
+     * @param instanceCode        审批实例CODE
+     * @param instanceOperateTime 操作时间时间戳13位
      */
     @Override
-    public void processApprovalForm(List<ApprovalInstanceForm> forms, LocalDateTime operateTime, String approvalCode, String serialNumber) {
+    public String processApprovalForm(ApprovalInstanceFormResult approvalInstanceFormResult, String approvalCode, String instanceCode, String instanceOperateTime) {
+        String resultString = "";
+        boolean formAllVoucher = true;
+
+        if (approvalInstanceFormResult.getApprovalInstance() == null | ArrayUtil.isEmpty(approvalInstanceFormResult.getApprovalInstanceForms())) {
+            return "获取审批实例为空";
+        }
+
+        long timestamp = Long.parseLong(instanceOperateTime);
+        LocalDateTime operateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
+
+        List<ApprovalInstanceForm> forms = approvalInstanceFormResult.getApprovalInstanceForms();
+        String serialNumber = approvalInstanceFormResult.getApprovalInstance().getSerialNumber();
+
         if (ArrayUtil.isEmpty(forms)) {
-            return;
+            return "审批实例单据列表为空";
         }
         Voucher voucher = new Voucher();
         voucher.setSerialNumber(serialNumber);
@@ -62,7 +76,7 @@ public class SystemServiceImpl implements SystemService {
                 String approvalTypeName = StringUtil.getValueByName(forms, "申请类别");
                 if ("付款申请".equals(approvalTypeName)) {
                     // 第一张生成逻辑（付款申请）
-                    voucher = new Voucher().setSerialNumber(serialNumber).setApprovalName(DataTypeEnum.toType(approvalCode).getDesc());
+                    voucher = new Voucher().setSerialNumber(serialNumber).setApprovalName("付款申请第一张");
 //                    voucher.setBusDate(year + "-" + month + "-" + day);
                     voucher.setDate(year + "-" + month + "-" + day);
                     voucher.setVoucherGroupId(VoucherGroupIdEnum.PRE003.getType());
@@ -70,7 +84,7 @@ public class SystemServiceImpl implements SystemService {
                     List<List<ApprovalInstanceForm>> formListDetails = StringUtil.getFormDetails(forms, "付款明细");
                     if (ArrayUtil.isEmpty(formListDetails)) {
                         log.error("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(forms));
-                        return;
+                        return "付款申请审批第一张生成审批明细列表为空";
                     }
                     for (List<ApprovalInstanceForm> formDetails : formListDetails) {
                         VoucherDetail j = new VoucherDetail();
@@ -117,11 +131,14 @@ public class SystemServiceImpl implements SystemService {
                     d.setCredit(StringUtil.getValueByName(forms, "金额汇总"));
                     voucherDetails.add(d);
                     voucher.setVoucherDetails(voucherDetails);
-                    SignUtil.saveVoucher(voucher);
-
+                    String save01 = SignUtil.saveVoucher(voucher);
+                    if (!"success".equals(save01)) {
+                        formAllVoucher = false;
+                        resultString += StrUtil.format("付款申请第一张凭证生成错误：【{}】 ", save01);
+                    }
 
                     // 第二张生成逻辑（付款申请）
-                    Voucher voucherTwo = new Voucher().setSerialNumber(serialNumber).setApprovalName(DataTypeEnum.toType(approvalCode).getDesc());
+                    Voucher voucherTwo = new Voucher().setSerialNumber(serialNumber).setApprovalName("付款申请第二张");
                     voucherTwo.setDate(year + "-" + month + "-" + day);
                     voucherTwo.setVoucherGroupId(VoucherGroupIdEnum.PRE004.getType());
                     List<VoucherDetail> voucherTwoDetails = new ArrayList<>();
@@ -173,12 +190,13 @@ public class SystemServiceImpl implements SystemService {
                         if (ArrayUtil.isEmpty(bitableList) || bitableList.size() > 1) {
                             log.error("存在争议的科目编码，请检查参数是否在映射表匹配。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
                                     StringUtil.getValueByName(formDetails, "费用大类"), StringUtil.getValueByName(formDetails, "费用子类"), StringUtil.getValueByName(formDetails, "所属品牌"), voucher.getApprovalName(), voucher.getSerialNumber());
-                            return;
+                            return StrUtil.format("存在争议的科目编码，请检查参数是否在映射表匹配。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
+                                    StringUtil.getValueByName(formDetails, "费用大类"), StringUtil.getValueByName(formDetails, "费用子类"), StringUtil.getValueByName(formDetails, "所属品牌"), voucher.getApprovalName(), voucher.getSerialNumber());
                         } else {
                             bitable = bitableList.get(0);
                             String summary = bitable.getSummary();
                             // 摘要为空跳过该明细的借贷凭证列表
-                            if (StrUtil.isEmpty(summary)) {
+                            if (StrUtil.isBlank(summary)) {
                                 continue;
                             }
                         }
@@ -230,18 +248,22 @@ public class SystemServiceImpl implements SystemService {
 
                     if (!voucherTwoDetails.isEmpty()) {
                         voucherTwo.setVoucherDetails(voucherTwoDetails);
-                        SignUtil.saveVoucher(voucherTwo);
+                        String save02 = SignUtil.saveVoucher(voucherTwo);
+                        if (!"success".equals(save02)) {
+                            formAllVoucher = false;
+                            resultString += StrUtil.format("付款申请第二张凭证生成错误：【{}】 ", save02);
+                        }
                     }
                 } else if ("个人报销".equals(approvalTypeName)) {
                     // 第一张生成逻辑（个人报销）
-                    voucher = new Voucher().setSerialNumber(serialNumber).setApprovalName(DataTypeEnum.toType(approvalCode).getDesc());
+                    voucher = new Voucher().setSerialNumber(serialNumber).setApprovalName("个人报销第一张");
                     voucher.setDate(year + "-" + month + "-" + day);
                     voucher.setVoucherGroupId(VoucherGroupIdEnum.PRE003.getType());
                     List<VoucherDetail> voucherDetails = new ArrayList<>();
                     List<List<ApprovalInstanceForm>> formListDetails = StringUtil.getFormDetails(forms, "付款明细");
                     if (ArrayUtil.isEmpty(formListDetails)) {
                         log.error("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(forms));
-                        return;
+                        return StrUtil.format("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(forms));
                     }
                     for (List<ApprovalInstanceForm> formDetails : formListDetails) {
                         VoucherDetail j = new VoucherDetail();
@@ -268,8 +290,8 @@ public class SystemServiceImpl implements SystemService {
                             }
                         }
                         if (StrUtil.isEmpty(accountingDimension.getFflex7())) {
-                            log.error("映射表找不到名称为个人报销的核算维度");
-                            return;
+                            log.error("个人报销第一张生成时映射表找不到名称为个人报销的核算维度：{}", StringUtil.getValueByName(forms, "收款人（单位）全称"));
+                            return StrUtil.format("个人报销第一张生成时映射表找不到名称为个人报销的核算维度：{}", StringUtil.getValueByName(forms, "收款人（单位）全称"));
                         }
                         StringUtil.setFieldEmpty(accountingDimension);
                         j.setAccountingDimension(accountingDimension);
@@ -291,11 +313,15 @@ public class SystemServiceImpl implements SystemService {
                     d.setCredit(StringUtil.getValueByName(forms, "金额汇总"));
                     voucherDetails.add(d);
                     voucher.setVoucherDetails(voucherDetails);
-                    SignUtil.saveVoucher(voucher);
+                    String save01 = SignUtil.saveVoucher(voucher);
+                    if (!"success".equals(save01)) {
+                        formAllVoucher = false;
+                        resultString += StrUtil.format("个人报销第一张凭证生成错误：【{}】 ", save01);
+                    }
 
 
                     // 第二张生成逻辑（个人报销）
-                    Voucher voucherTwo = new Voucher().setSerialNumber(serialNumber).setApprovalName(DataTypeEnum.toType(approvalCode).getDesc());
+                    Voucher voucherTwo = new Voucher().setSerialNumber(serialNumber).setApprovalName("个人报销第二张");
                     voucherTwo.setDate(year + "-" + month + "-" + day);
                     voucherTwo.setVoucherGroupId(VoucherGroupIdEnum.PRE004.getType());
                     List<VoucherDetail> voucherTwoDetails = new ArrayList<>();
@@ -334,12 +360,13 @@ public class SystemServiceImpl implements SystemService {
                         if (ArrayUtil.isEmpty(bitableList) || bitableList.size() > 1) {
                             log.error("存在争议的科目编码，请检查参数是否在映射表匹配。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
                                     StringUtil.getValueByName(formDetails, "费用大类"), StringUtil.getValueByName(formDetails, "费用子类"), StringUtil.getValueByName(formDetails, "所属品牌"), voucher.getApprovalName(), voucher.getSerialNumber());
-                            return;
+                            return StrUtil.format("存在争议的科目编码，请检查参数是否在映射表匹配。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
+                                    StringUtil.getValueByName(formDetails, "费用大类"), StringUtil.getValueByName(formDetails, "费用子类"), StringUtil.getValueByName(formDetails, "所属品牌"), voucher.getApprovalName(), voucher.getSerialNumber());
                         } else {
                             bitable = bitableList.get(0);
                             String summary = bitable.getSummary();
                             // 摘要为空跳过该明细的借贷凭证列表
-                            if (StrUtil.isEmpty(summary)) {
+                            if (StrUtil.isBlank(summary)) {
                                 continue;
                             }
                         }
@@ -385,19 +412,23 @@ public class SystemServiceImpl implements SystemService {
 
                     if (!voucherTwoDetails.isEmpty()) {
                         voucherTwo.setVoucherDetails(voucherTwoDetails);
-                        SignUtil.saveVoucher(voucherTwo);
+                        String save02 = SignUtil.saveVoucher(voucherTwo);
+                        if (!"success".equals(save02)) {
+                            formAllVoucher = false;
+                            resultString += StrUtil.format("个人报销第二张凭证生成错误：【{}】 ", save02);
+                        }
                     }
 
                 } else if ("预付申请".equals(approvalTypeName)) {
                     // 第一张生成逻辑（预付申请）
-                    voucher = new Voucher().setSerialNumber(serialNumber).setApprovalName(DataTypeEnum.toType(approvalCode).getDesc());
+                    voucher = new Voucher().setSerialNumber(serialNumber).setApprovalName("预付申请第一张");
                     voucher.setDate(year + "-" + month + "-" + day);
                     voucher.setVoucherGroupId(VoucherGroupIdEnum.PRE003.getType());
                     List<VoucherDetail> voucherDetails = new ArrayList<>();
                     List<List<ApprovalInstanceForm>> formListDetails = StringUtil.getFormDetails(forms, "明细");
                     if (ArrayUtil.isEmpty(formListDetails)) {
                         log.error("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(forms));
-                        return;
+                        return StrUtil.format("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(forms));
                     }
                     for (List<ApprovalInstanceForm> formDetails : formListDetails) {
                         VoucherDetail j = new VoucherDetail();
@@ -446,11 +477,15 @@ public class SystemServiceImpl implements SystemService {
                     d.setCredit(StringUtil.getValueByName(forms, "金额汇总"));
                     voucherDetails.add(d);
                     voucher.setVoucherDetails(voucherDetails);
-                    SignUtil.saveVoucher(voucher);
+                    String save01 = SignUtil.saveVoucher(voucher);
+                    if (!"success".equals(save01)) {
+                        formAllVoucher = false;
+                        resultString += StrUtil.format("预付申请第一张凭证生成错误：【{}】 ", save01);
+                    }
 
 
                     // 第二张生成逻辑（预付申请）
-                    Voucher voucherTwo = new Voucher().setSerialNumber(serialNumber).setApprovalName(DataTypeEnum.toType(approvalCode).getDesc());
+                    Voucher voucherTwo = new Voucher().setSerialNumber(serialNumber).setApprovalName("预付申请第二张");
                     voucherTwo.setDate(year + "-" + month + "-" + day);
                     voucherTwo.setVoucherGroupId(VoucherGroupIdEnum.PRE004.getType());
                     List<VoucherDetail> voucherTwoDetails = new ArrayList<>();
@@ -475,12 +510,13 @@ public class SystemServiceImpl implements SystemService {
                         if (ArrayUtil.isEmpty(bitableList) || bitableList.size() > 1) {
                             log.error("存在争议的科目编码，请检查参数是否在映射表匹配。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
                                     StringUtil.getValueByName(formDetails, "费用大类"), StringUtil.getValueByName(formDetails, "费用子类"), StringUtil.getValueByName(formDetails, "所属品牌"), voucher.getApprovalName(), voucher.getSerialNumber());
-                            return;
+                            return StrUtil.format("存在争议的科目编码，请检查参数是否在映射表匹配。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
+                                    StringUtil.getValueByName(formDetails, "费用大类"), StringUtil.getValueByName(formDetails, "费用子类"), StringUtil.getValueByName(formDetails, "所属品牌"), voucher.getApprovalName(), voucher.getSerialNumber());
                         } else {
                             bitable = bitableList.get(0);
                             String summary = bitable.getSummary();
                             // 摘要为空跳过该明细的借贷凭证列表
-                            if (StrUtil.isEmpty(summary)) {
+                            if (StrUtil.isBlank(summary)) {
                                 continue;
                             }
                         }
@@ -524,7 +560,11 @@ public class SystemServiceImpl implements SystemService {
                     }
                     if (!voucherTwoDetails.isEmpty()) {
                         voucherTwo.setVoucherDetails(voucherTwoDetails);
-                        SignUtil.saveVoucher(voucherTwo);
+                        String save02 = SignUtil.saveVoucher(voucherTwo);
+                        if (!"success".equals(save02)) {
+                            formAllVoucher = false;
+                            resultString += StrUtil.format("预付申请第二张凭证生成错误：【{}】 ", save02);
+                        }
                     }
                 }
                 break;
@@ -533,9 +573,9 @@ public class SystemServiceImpl implements SystemService {
                 List<List<ApprovalInstanceForm>> formListDetails = StringUtil.getFormDetails(forms, "申请明细");
                 if (ArrayUtil.isEmpty(formListDetails)) {
                     log.error("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(forms));
-                    return;
+                    return StrUtil.format("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(forms));
                 }
-                voucher = new Voucher().setSerialNumber(serialNumber).setApprovalName(DataTypeEnum.toType(approvalCode).getDesc());
+                voucher = new Voucher().setSerialNumber(serialNumber).setApprovalName("开票申请");
                 voucher.setDate(year + "-" + month + "-" + day);
                 voucher.setVoucherGroupId(VoucherGroupIdEnum.PRE004.getType());
                 List<VoucherDetail> voucherDetails = new ArrayList<>();
@@ -555,12 +595,13 @@ public class SystemServiceImpl implements SystemService {
                     if (ArrayUtil.isEmpty(bitableList) || bitableList.size() > 1) {
                         log.error("存在争议的科目编码，请检查参数是否在映射表匹配。商品信息/服务信息：{} 税率：{}，审批名称：{} 飞书流程号：{}",
                                 StringUtil.getValueByName(formDetails, "商品信息/服务信息"), StringUtil.getValueByName(formDetails, "税率(%)"), voucher.getApprovalName(), voucher.getSerialNumber());
-                        return;
+                        return StrUtil.format("存在争议的科目编码，请检查参数是否在映射表匹配。商品信息/服务信息：{} 税率：{}，审批名称：{} 飞书流程号：{}",
+                                StringUtil.getValueByName(formDetails, "商品信息/服务信息"), StringUtil.getValueByName(formDetails, "税率(%)"), voucher.getApprovalName(), voucher.getSerialNumber());
                     } else {
                         bitable = bitableList.get(0);
                         String summary = bitable.getSummary();
                         // 摘要为空跳过该明细的借贷凭证列表
-                        if (StrUtil.isEmpty(summary)) {
+                        if (StrUtil.isBlank(summary)) {
                             continue;
                         }
                     }
@@ -609,7 +650,11 @@ public class SystemServiceImpl implements SystemService {
                 }
                 if (!voucherDetails.isEmpty()) {
                     voucher.setVoucherDetails(voucherDetails);
-                    SignUtil.saveVoucher(voucher);
+                    String save = SignUtil.saveVoucher(voucher);
+                    if (!"success".equals(save)) {
+                        formAllVoucher = false;
+                        resultString += StrUtil.format("开票申请凭证生成错误：【{}】 ", save);
+                    }
                 }
 
                 break;
@@ -620,27 +665,27 @@ public class SystemServiceImpl implements SystemService {
                 String selectString = StringUtil.getValueByName(forms, "付款明细选择");
                 int number = StringUtil.getCurrentSelectNumber(selectString);
                 if (number == -1) {
-                    return;
+                    return "审批设置的选择项目标题开头不为明细，请设置如下: 明细x";
                 } else {
                     referenceInstanceCode = instanceCodeList.get(0);
                 }
                 ApprovalInstanceFormResult result = StringUtil.instanceToFormList(referenceInstanceCode);
                 if (result.getApprovalInstance() == null || ArrayUtil.isEmpty(result.getApprovalInstanceForms())) {
                     log.error("审批实例转化后实例为空或者字段列表为空");
-                    return;
+                    return "审批实例转化后实例为空或者字段列表为空";
                 }
                 List<ApprovalInstanceForm> invoiceWriteOffForms = result.getApprovalInstanceForms();
                 formListDetails = StringUtil.getFormDetails(invoiceWriteOffForms, "明细");
                 if (ArrayUtil.isEmpty(formListDetails)) {
                     log.error("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(invoiceWriteOffForms));
-                    return;
+                    return StrUtil.format("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(invoiceWriteOffForms));
                 }
                 if (number > formListDetails.size()) {
                     log.error("选择的明细索引超出了该引用单据明细列表");
-                    return;
+                    return "选择的明细索引超出了该引用单据明细列表";
                 }
                 List<ApprovalInstanceForm> formDetails = formListDetails.get(number);
-                Voucher voucherInvoiceWriteOff = new Voucher().setSerialNumber(serialNumber).setApprovalName(DataTypeEnum.toType(approvalCode).getDesc());
+                Voucher voucherInvoiceWriteOff = new Voucher().setSerialNumber(serialNumber).setApprovalName("发票核销");
                 voucherInvoiceWriteOff.setDate(year + "-" + month + "-" + day);
                 voucherInvoiceWriteOff.setVoucherGroupId(VoucherGroupIdEnum.PRE004.getType());
                 List<VoucherDetail> voucherInvoiceWriteOffVoucherDetails = new ArrayList<>();
@@ -673,14 +718,17 @@ public class SystemServiceImpl implements SystemService {
                 if (ArrayUtil.isEmpty(bitableList) || bitableList.size() > 1) {
                     log.error("存在争议的科目编码，请检查参数是否在映射表匹配。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
                             StringUtil.getValueByName(formDetails, "费用大类"), StringUtil.getValueByName(formDetails, "费用子类"), StringUtil.getValueByName(formDetails, "所属品牌"), voucher.getApprovalName(), voucher.getSerialNumber());
-                    return;
+                    return StrUtil.format("存在争议的科目编码，请检查参数是否在映射表匹配。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
+                            StringUtil.getValueByName(formDetails, "费用大类"), StringUtil.getValueByName(formDetails, "费用子类"), StringUtil.getValueByName(formDetails, "所属品牌"), voucher.getApprovalName(), voucher.getSerialNumber());
                 } else {
                     bitable = bitableList.get(0);
                     String summary = bitable.getSummary();
                     // 摘要为空跳过该明细的借贷凭证列表
-                    if (StrUtil.isEmpty(summary)) {
-                        log.error("摘要为空");
-                        return;
+                    if (StrUtil.isBlank(summary)) {
+                        log.error("摘要为空。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
+                                StringUtil.getValueByName(formDetails, "费用大类"), StringUtil.getValueByName(formDetails, "费用子类"), StringUtil.getValueByName(formDetails, "所属品牌"), voucher.getApprovalName(), voucher.getSerialNumber());
+                        return StrUtil.format("摘要为空。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
+                                StringUtil.getValueByName(formDetails, "费用大类"), StringUtil.getValueByName(formDetails, "费用子类"), StringUtil.getValueByName(formDetails, "所属品牌"), voucher.getApprovalName(), voucher.getSerialNumber());
                     }
                 }
                 VoucherDetail j1 = new VoucherDetail();
@@ -722,16 +770,20 @@ public class SystemServiceImpl implements SystemService {
                 VoucherDetail voucherDetailCreditOne = getAccountingDimensionParam(invoiceWriteOffForms, null, formDetails, d1, creditAccountingDimensionOne);
                 voucherInvoiceWriteOffVoucherDetails.add(voucherDetailCreditOne);
                 voucherInvoiceWriteOff.setVoucherDetails(voucherInvoiceWriteOffVoucherDetails);
-                SignUtil.saveVoucher(voucherInvoiceWriteOff);
+                String save = SignUtil.saveVoucher(voucherInvoiceWriteOff);
+                if (!"success".equals(save)) {
+                    formAllVoucher = false;
+                    resultString += StrUtil.format("发票核销凭证生成错误：【{}】 ", save);
+                }
                 break;
             case WITHHOLDING_APPLICATION:
                 // 预提申请
                 List<List<ApprovalInstanceForm>> whaFormListDetails = StringUtil.getFormDetails(forms, "明细");
                 if (ArrayUtil.isEmpty(whaFormListDetails)) {
                     log.error("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(forms));
-                    return;
+                    return StrUtil.format("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(forms));
                 }
-                Voucher whaVoucher = new Voucher().setSerialNumber(serialNumber).setApprovalName(DataTypeEnum.toType(approvalCode).getDesc());
+                Voucher whaVoucher = new Voucher().setSerialNumber(serialNumber).setApprovalName("预提申请");
                 whaVoucher.setDate(year + "-" + month + "-" + day);
                 whaVoucher.setVoucherGroupId(VoucherGroupIdEnum.PRE004.getType());
                 List<VoucherDetail> whaVoucherDetails = new ArrayList<>();
@@ -759,12 +811,13 @@ public class SystemServiceImpl implements SystemService {
                     if (ArrayUtil.isEmpty(whaBitableList) || whaBitableList.size() > 1) {
                         log.error("存在争议的科目编码，请检查参数是否在映射表匹配。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
                                 StringUtil.getValueByName(whaFormDetails, "费用大类"), StringUtil.getValueByName(whaFormDetails, "费用子类"), StringUtil.getValueByName(whaFormDetails, "所属品牌"), voucher.getApprovalName(), voucher.getSerialNumber());
-                        return;
+                        return StrUtil.format("存在争议的科目编码，请检查参数是否在映射表匹配。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
+                                StringUtil.getValueByName(whaFormDetails, "费用大类"), StringUtil.getValueByName(whaFormDetails, "费用子类"), StringUtil.getValueByName(whaFormDetails, "所属品牌"), voucher.getApprovalName(), voucher.getSerialNumber());
                     } else {
                         whaBitable = whaBitableList.get(0);
                         String summary = whaBitable.getSummary();
                         // 摘要为空跳过该明细的借贷凭证列表
-                        if (StrUtil.isEmpty(summary)) {
+                        if (StrUtil.isBlank(summary)) {
                             continue;
                         }
                     }
@@ -806,7 +859,11 @@ public class SystemServiceImpl implements SystemService {
                 }
                 if (!whaVoucherDetails.isEmpty()) {
                     whaVoucher.setVoucherDetails(whaVoucherDetails);
-                    SignUtil.saveVoucher(whaVoucher);
+                    String save01 = SignUtil.saveVoucher(whaVoucher);
+                    if (!"success".equals(save01)) {
+                        formAllVoucher = false;
+                        resultString += StrUtil.format("预提申请凭证生成错误：【{}】 ", save01);
+                    }
                 }
                 break;
             case REFUND_APPLICATION:
@@ -814,9 +871,9 @@ public class SystemServiceImpl implements SystemService {
                 List<List<ApprovalInstanceForm>> raFormListDetails = StringUtil.getFormDetails(forms, "申请明细");
                 if (ArrayUtil.isEmpty(raFormListDetails)) {
                     log.error("审批申请明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(forms));
-                    return;
+                    return StrUtil.format("审批申请明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(forms));
                 }
-                Voucher raVoucher = new Voucher().setSerialNumber(serialNumber).setApprovalName(DataTypeEnum.toType(approvalCode).getDesc());
+                Voucher raVoucher = new Voucher().setSerialNumber(serialNumber).setApprovalName("退款申请");
                 raVoucher.setDate(year + "-" + month + "-" + day);
                 raVoucher.setVoucherGroupId(VoucherGroupIdEnum.PRE004.getType());
                 List<VoucherDetail> raVoucherDetails = new ArrayList<>();
@@ -827,7 +884,7 @@ public class SystemServiceImpl implements SystemService {
                     // 预收款走逻辑一或二
                     String isFixedAssets = StringUtil.getValueByName(raFormDetails, "是否为固定资产");
                     if ("是".equals(isFixedAssets)) {
-                        return;
+                        continue;
                     }
 
                     String raPrepaidFee = StringUtil.getValueByName(raFormDetails, "品牌核销");
@@ -851,13 +908,15 @@ public class SystemServiceImpl implements SystemService {
                     if (ArrayUtil.isEmpty(raBitableList) || raBitableList.size() > 1) {
                         log.error("存在争议的科目编码，请检查参数是否在映射表匹配。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
                                 StringUtil.getValueByName(raFormDetails, "费用大类"), StringUtil.getValueByName(raFormDetails, "费用子类"), StringUtil.getValueByName(raFormDetails, "所属品牌"), voucher.getApprovalName(), voucher.getSerialNumber());
-                        return;
+                        return StrUtil.format("存在争议的科目编码，请检查参数是否在映射表匹配。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
+                                StringUtil.getValueByName(raFormDetails, "费用大类"), StringUtil.getValueByName(raFormDetails, "费用子类"), StringUtil.getValueByName(raFormDetails, "所属品牌"), voucher.getApprovalName(), voucher.getSerialNumber());
                     } else {
                         raBitable = raBitableList.get(0);
                         String summary = raBitable.getSummary();
                         // 摘要为空直接退出
-                        if (StrUtil.isEmpty(summary)) {
-                            return;
+                        if (StrUtil.isBlank(summary)) {
+                            return StrUtil.format("摘要为空。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
+                                    StringUtil.getValueByName(raFormDetails, "费用大类"), StringUtil.getValueByName(raFormDetails, "费用子类"), StringUtil.getValueByName(raFormDetails, "所属品牌"), voucher.getApprovalName(), voucher.getSerialNumber());
                         }
                     }
                     VoucherDetail raj1 = new VoucherDetail();
@@ -893,25 +952,55 @@ public class SystemServiceImpl implements SystemService {
                 raVoucher.setVoucherDetails(raVoucherDetails);
                 if (ArrayUtil.isEmpty(raVoucherDetails)) {
                     log.error("申请明细列表为空，请检查raVoucherDetails列表: {}", JSONObject.toJSONString(raVoucherDetails));
-                    return;
+                    return StrUtil.format("申请明细列表为空，请检查raVoucherDetails列表: {}", JSONObject.toJSONString(raVoucherDetails));
                 }
-                SignUtil.saveVoucher(raVoucher);
+                String save01 = SignUtil.saveVoucher(raVoucher);
+                if (!"success".equals(save01)) {
+                    formAllVoucher = false;
+                    resultString += StrUtil.format("退款申请凭证生成错误：【{}】 ", save01);
+                }
                 break;
         }
+        if (formAllVoucher) {
+            return "success";
+        } else {
+            return resultString;
+        }
+    }
+
+    @Override
+    public void insertRecordLog(ApprovalInstanceFormResult result, String save, String instanceOperateTime) {
+        if (result.getApprovalInstance() == null | ArrayUtil.isEmpty(result.getApprovalInstanceForms())) {
+            log.error("insertRecordLog方法参数审批实例或FORM解析为空");
+        }
+        SyncRecord record = new SyncRecord();
+        record.setSerialNumber(result.getApprovalInstance().getSerialNumber());
+        record.setInstanceCode(result.getApprovalInstance().getInstanceCode());
+        record.setApprovalName(result.getApprovalInstance().getApprovalName());
+        record.setInstanceOperateTime(StringUtil.timestampToYearMonthDayHourMinuteSecond(instanceOperateTime));
+        record.setSyncType("success".equals(save) ? "已同步" : "同步失败");
+        record.setErrorInfo("success".equals(save) ? "" : save);
+        JSONObject body = new JSONObject();
+        body.put("fields", JSONObject.toJSON(record));
+        String itemJson = body.toJSONString();
+        // 处理字段为中文
+        itemJson = StringUtil.processChineseTitleOrder(itemJson);
+        SignUtil.insertRecord(itemJson, Constants.APP_TOKEN_APPROVAL, Constants.TABLE_32);
+        log.info("json: {}", StringUtil.subLog(itemJson));
     }
 
     /**
      * 组装核算维度参数
      *
-     * @param forms                         审批实例表单列表
-     * @param employeeName                  员工姓名
-     * @param formDetails                   审批实例表单明细列表
-     * @param voucherDetail                 金蝶凭证明细详情
-     * @param accountingDimension           核算维度文本
+     * @param forms               审批实例表单列表
+     * @param employeeName        员工姓名
+     * @param formDetails         审批实例表单明细列表
+     * @param voucherDetail       金蝶凭证明细详情
+     * @param accountingDimension 核算维度文本
      */
     private VoucherDetail getAccountingDimensionParam(List<ApprovalInstanceForm> forms, String employeeName,
-                                             List<ApprovalInstanceForm> formDetails, VoucherDetail voucherDetail,
-                                             String accountingDimension) {
+                                                      List<ApprovalInstanceForm> formDetails, VoucherDetail voucherDetail,
+                                                      String accountingDimension) {
         AccountingDimensionParam param = new AccountingDimensionParam();
         param.setAccountingDimension(accountingDimension);
         String brand = StringUtil.getValueByName(formDetails, "所属品牌");

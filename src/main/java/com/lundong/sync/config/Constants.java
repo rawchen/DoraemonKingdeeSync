@@ -222,4 +222,7 @@ public class Constants {
     // 其他摊销科目映射表
     public static final String TABLE_31 = "tblvQvFQJ8gNM7lW";
     public static List<Bitable> LIST_TABLE_31;
+
+    // 同步记录
+    public static final String TABLE_32 = "tbln0Qo74gtFIwg5";
 }

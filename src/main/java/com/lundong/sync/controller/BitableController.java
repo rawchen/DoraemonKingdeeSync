@@ -1,10 +1,15 @@
 package com.lundong.sync.controller;
 
+import cn.hutool.core.util.StrUtil;
+import com.lundong.sync.entity.ApprovalInstanceFormResult;
 import com.lundong.sync.entity.BitableParam;
+import com.lundong.sync.entity.base.SyncRecord;
 import com.lundong.sync.entity.bitable.bitable.*;
 import com.lundong.sync.enums.BitableTypeEnum;
 import com.lundong.sync.service.BitableService;
+import com.lundong.sync.service.SystemService;
 import com.lundong.sync.util.SignUtil;
+import com.lundong.sync.util.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,6 +27,9 @@ public class BitableController {
 
     @Autowired
     BitableService bitableService;
+
+    @Autowired
+    SystemService systemService;
 
     @RequestMapping(value = "/create_voucher")
     public void createVoucher(@RequestParam("app_token") String appToken,
@@ -69,6 +77,30 @@ public class BitableController {
         if (BitableTypeEnum.toType(tableId) == BitableTypeEnum.TABLE_ID_INCOME_ESTIMATION) {
             IncomeEstimation baseRecord01 = SignUtil.findBaseRecord(bitableParam, IncomeEstimation.class);
             bitableService.processBitableWriteOff(baseRecord01, bitableParam);
+        }
+    }
+
+    @RequestMapping(value = "recommend")
+    public void recommend(@RequestParam("app_token") String appToken,
+                         @RequestParam("table_id") String tableId,
+                         @RequestParam("record_id") String recordId) throws Exception {
+        log.info("重推参数: appToken: {}, tableId: {}, recordId: {}", appToken, tableId, recordId);
+        if (StrUtil.isNotEmpty(appToken) && StrUtil.isNotEmpty(tableId) && StrUtil.isNotEmpty(recordId)) {
+            BitableParam bitableParam = new BitableParam();
+            bitableParam.setAppToken(appToken);
+            bitableParam.setTableId(tableId);
+            bitableParam.setRecordId(recordId);
+            SyncRecord baseRecord01 = SignUtil.findBaseRecord(bitableParam, SyncRecord.class);
+            if ("已同步".equals(baseRecord01.getSyncType())) {
+                log.info("已成功生成过该审批对应的凭证: {}, bitableParam: {}", baseRecord01.getInstanceCode(), bitableParam);
+            } else {
+                // 获取审批保存
+                ApprovalInstanceFormResult result = StringUtil.instanceToFormList(baseRecord01.getInstanceCode());
+                String save = systemService.processApprovalForm(result, baseRecord01.getApprovalName(),
+                        baseRecord01.getInstanceCode(),
+                        StringUtil.yearMonthDayHourMinuteSecondToTimestamp(baseRecord01.getGenerationDate()));
+                SignUtil.updateHasGenerate(save, bitableParam);
+            }
         }
     }
 }
