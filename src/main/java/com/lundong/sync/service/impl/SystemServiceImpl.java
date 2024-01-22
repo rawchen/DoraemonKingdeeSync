@@ -737,10 +737,9 @@ public class SystemServiceImpl implements SystemService {
                     String summary = bitable.getSummary();
                     // 摘要为空跳过该明细的借贷凭证列表
                     if (StrUtil.isBlank(summary)) {
-                        log.error("摘要为空。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
+                        log.info("摘要为空, 无需生成。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
                                 StringUtil.getValueByName(formDetails, "费用大类"), StringUtil.getValueByName(formDetails, "费用子类"), StringUtil.getValueByName(formDetails, "所属品牌"), voucher.getApprovalName(), voucher.getSerialNumber());
-                        return StrUtil.format("摘要为空。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
-                                StringUtil.getValueByName(formDetails, "费用大类"), StringUtil.getValueByName(formDetails, "费用子类"), StringUtil.getValueByName(formDetails, "所属品牌"), voucher.getApprovalName(), voucher.getSerialNumber());
+                        return "success";
                     }
                 }
                 VoucherDetail j1 = new VoucherDetail();
@@ -927,8 +926,9 @@ public class SystemServiceImpl implements SystemService {
                         String summary = raBitable.getSummary();
                         // 摘要为空直接退出
                         if (StrUtil.isBlank(summary)) {
-                            return StrUtil.format("摘要为空。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
-                                    StringUtil.getValueByName(raFormDetails, "费用大类"), StringUtil.getValueByName(raFormDetails, "费用子类"), StringUtil.getValueByName(raFormDetails, "所属品牌"), voucher.getApprovalName(), voucher.getSerialNumber());
+                            log.info(StrUtil.format("摘要为空, 无需生成明细。费用大类：{} 费用子类：{} 所属品牌：{}，审批名称：{} 飞书流程号：{}",
+                                    StringUtil.getValueByName(raFormDetails, "费用大类"), StringUtil.getValueByName(raFormDetails, "费用子类"), StringUtil.getValueByName(raFormDetails, "所属品牌"), voucher.getApprovalName(), voucher.getSerialNumber()));
+                            continue;
                         }
                     }
                     VoucherDetail raj1 = new VoucherDetail();
