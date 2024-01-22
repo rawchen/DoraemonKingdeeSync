@@ -98,7 +98,7 @@ public class BitableController {
                 ApprovalInstanceFormResult result = StringUtil.instanceToFormList(baseRecord01.getInstanceCode());
                 String save = systemService.processApprovalForm(result, baseRecord01.getApprovalName(),
                         baseRecord01.getInstanceCode(),
-                        StringUtil.yearMonthDayHourMinuteSecondToTimestamp(baseRecord01.getGenerationDate()));
+                        StringUtil.yearMonthDayHourMinuteSecondToTimestamp(baseRecord01.getInstanceOperateTime()));
                 SignUtil.updateHasGenerate(save, bitableParam);
             }
         }

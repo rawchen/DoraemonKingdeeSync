@@ -4,6 +4,7 @@ import com.lark.oapi.core.utils.Jsons;
 import com.lundong.sync.config.Constants;
 import com.lundong.sync.entity.ApprovalInstanceFormResult;
 import com.lundong.sync.enums.ApprovalInstanceEnum;
+import com.lundong.sync.enums.DataTypeEnum;
 import com.lundong.sync.event.ApprovalInstanceStatusUpdatedEvent;
 import com.lundong.sync.event.ApprovalInstanceStatusUpdatedV1Handler;
 import com.lundong.sync.event.CustomEventDispatcher;
@@ -58,7 +59,7 @@ public class EventController {
                         if (ApprovalInstanceEnum.APPROVED.getType().equals(status)) {
                             // 根据审批实例ID查询审批单
                             ApprovalInstanceFormResult result = StringUtil.instanceToFormList(instanceCode);
-                            String save = systemService.processApprovalForm(result, approvalCode, instanceCode, instanceOperateTime);
+                            String save = systemService.processApprovalForm(result, DataTypeEnum.toType(approvalCode).getDesc(), instanceCode, instanceOperateTime);
                             systemService.insertRecordLog(result, save, instanceOperateTime);
                         }
                     };

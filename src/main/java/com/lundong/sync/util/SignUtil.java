@@ -282,7 +282,7 @@ public class SignUtil {
             }
             JSONObject fields = jsonObject.getJSONObject("data").getJSONObject("record").getJSONObject("fields");
             result = JSONObject.toJavaObject(fields, tClass);
-            StringUtil.clearSpecialSymbols(result);
+//            StringUtil.clearSpecialSymbols(result);
         } catch (Exception e) {
             log.info("检索记录接口调用异常", e);
             return null;

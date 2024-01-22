@@ -39,12 +39,12 @@ public class SystemServiceImpl implements SystemService {
     /**
      * 处理审批单
      *
-     * @param approvalCode        审批CODE
+     * @param approvalName        审批名称
      * @param instanceCode        审批实例CODE
      * @param instanceOperateTime 操作时间时间戳13位
      */
     @Override
-    public String processApprovalForm(ApprovalInstanceFormResult approvalInstanceFormResult, String approvalCode, String instanceCode, String instanceOperateTime) {
+    public String processApprovalForm(ApprovalInstanceFormResult approvalInstanceFormResult, String approvalName, String instanceCode, String instanceOperateTime) {
         String resultString = "";
         boolean formAllVoucher = true;
 
@@ -63,10 +63,22 @@ public class SystemServiceImpl implements SystemService {
         }
         Voucher voucher = new Voucher();
         voucher.setSerialNumber(serialNumber);
-        voucher.setApprovalName(DataTypeEnum.toType(approvalCode).getDesc());
+        voucher.setApprovalName(approvalName);
         int year = operateTime.getYear();
         int month = operateTime.getMonthValue();
         int day = operateTime.getDayOfMonth();
+        String approvalCode = "";
+        if (approvalName.contains("付款申请")) {
+            approvalCode = DataTypeEnum.PAYMENT_PERSONAL_PREPAID.getCode();
+        } else if (approvalName.contains("开票申请")) {
+            approvalCode = DataTypeEnum.INVOICING_APPLICATION.getCode();
+        } else if (approvalName.contains("发票核销")) {
+            approvalCode = DataTypeEnum.INVOICE_WRITE_OFF.getCode();
+        } else if (approvalName.contains("预提申请")) {
+            approvalCode = DataTypeEnum.WITHHOLDING_APPLICATION.getCode();
+        } else if (approvalName.contains("退款申请")) {
+            approvalCode = DataTypeEnum.REFUND_APPLICATION.getCode();
+        }
         switch (DataTypeEnum.toType(approvalCode)) {
             case PAYMENT_PERSONAL_PREPAID:
                 // 解析申请人为员工
@@ -675,7 +687,7 @@ public class SystemServiceImpl implements SystemService {
                     return "审批实例转化后实例为空或者字段列表为空";
                 }
                 List<ApprovalInstanceForm> invoiceWriteOffForms = result.getApprovalInstanceForms();
-                formListDetails = StringUtil.getFormDetails(invoiceWriteOffForms, "明细");
+                formListDetails = StringUtil.getFormDetails(invoiceWriteOffForms, "付款明细");
                 if (ArrayUtil.isEmpty(formListDetails)) {
                     log.error("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(invoiceWriteOffForms));
                     return StrUtil.format("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(invoiceWriteOffForms));
