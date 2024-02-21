@@ -219,11 +219,11 @@ public class SystemServiceImpl implements SystemService {
                         String explanation = (genLogicType == 1 || genLogicType == 3 ? "确认成本" : "暂估成本") +
                                 "&" + StringUtil.getValueByName(forms, "收款人（单位）全称") +
                                 "&" + StringUtil.getValueByName(formDetails, "所属品牌") +
-                                "&" + StringUtil.getValueByName(formDetails, "费用归属年份") + StringUtil.getValueByName(formDetails, "费用归属月份") +
                                 "&" + serialNumber +
                                 "&" + StringUtil.getValueByName(formDetails, "费用大类") +
                                 "&" + StringUtil.getValueByName(formDetails, "费用子类") + (genLogicType == 1 || genLogicType == 2 ? "&品牌核销" : "") +
-                                "&" + StringUtil.getValueByName(formDetails, "备注");
+                                "&" + StringUtil.getValueByName(formDetails, "备注") +
+                                "&" + StringUtil.getValueByName(formDetails, "费用归属年份") + StringUtil.getValueByName(formDetails, "费用归属月份");
                         j1.setExplanation(explanation);
                         j2.setExplanation(explanation);
                         d1.setExplanation(explanation);
@@ -389,11 +389,11 @@ public class SystemServiceImpl implements SystemService {
                         String explanation = (genLogicType == 1 ? "确认成本" : "确认费用") +
                                 "&" + StringUtil.getValueByName(forms, "收款人（单位）全称") +
                                 "&" + StringUtil.getValueByName(formDetails, "所属品牌") +
-                                "&" + StringUtil.getValueByName(formDetails, "费用归属年份") + StringUtil.getValueByName(formDetails, "费用归属月份") +
                                 "&" + serialNumber +
                                 "&" + StringUtil.getValueByName(formDetails, "费用大类") +
                                 "&" + StringUtil.getValueByName(formDetails, "费用子类") + (genLogicType == 1 ? "&品牌核销" : "") +
-                                "&" + StringUtil.getValueByName(formDetails, "备注");
+                                "&" + StringUtil.getValueByName(formDetails, "备注") +
+                                "&" + StringUtil.getValueByName(formDetails, "费用归属年份") + StringUtil.getValueByName(formDetails, "费用归属月份");
                         j1.setExplanation(explanation);
                         j2.setExplanation(explanation);
                         d1.setExplanation(explanation);
@@ -437,7 +437,7 @@ public class SystemServiceImpl implements SystemService {
                     voucher.setDate(year + "-" + month + "-" + day);
                     voucher.setVoucherGroupId(VoucherGroupIdEnum.PRE003.getType());
                     List<VoucherDetail> voucherDetails = new ArrayList<>();
-                    List<List<ApprovalInstanceForm>> formListDetails = StringUtil.getFormDetails(forms, "明细");
+                    List<List<ApprovalInstanceForm>> formListDetails = StringUtil.getFormDetails(forms, "付款明细");
                     if (ArrayUtil.isEmpty(formListDetails)) {
                         log.error("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(forms));
                         return StrUtil.format("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(forms));
@@ -538,11 +538,11 @@ public class SystemServiceImpl implements SystemService {
                         String explanation = ("收票") +
                                 "&" + StringUtil.getValueByName(forms, "收款人（单位）全称") +
                                 "&" + StringUtil.getValueByName(formDetails, "所属品牌") +
-                                "&" + StringUtil.getValueByName(formDetails, "费用归属年份") + StringUtil.getValueByName(formDetails, "费用归属月份") +
                                 "&" + serialNumber +
                                 "&" + StringUtil.getValueByName(formDetails, "费用大类") +
                                 "&" + StringUtil.getValueByName(formDetails, "费用子类") +
-                                "&" + StringUtil.getValueByName(formDetails, "备注");
+                                "&" + StringUtil.getValueByName(formDetails, "备注") +
+                                "&" + StringUtil.getValueByName(formDetails, "费用归属年份") + StringUtil.getValueByName(formDetails, "费用归属月份");
                         j1.setExplanation(explanation);
                         j2.setExplanation(explanation);
                         d1.setExplanation(explanation);
@@ -623,9 +623,9 @@ public class SystemServiceImpl implements SystemService {
                     String explanation = ("收入确认") +
                             "&" + StringUtil.getValueByName(forms, "开票公司") +
                             "&" + StringUtil.getValueByName(forms, "所属品牌") +
-                            "&" + StringUtil.getValueByName(formDetails, "归属年份") + StringUtil.getValueByName(formDetails, "归属月份") +
                             "&" + StringUtil.getValueByName(formDetails, "商品信息/服务信息") +
-                            "&" + serialNumber;
+                            "&" + serialNumber +
+                            "&" + StringUtil.getValueByName(formDetails, "归属年份") + StringUtil.getValueByName(formDetails, "归属月份");
                     j1.setExplanation(explanation);
                     d1.setExplanation(explanation);
                     d2.setExplanation(explanation);
@@ -748,11 +748,11 @@ public class SystemServiceImpl implements SystemService {
                 String explanation = ("确认成本") +
                         "&" + StringUtil.getValueByName(invoiceWriteOffForms, "收款人（单位）全称") +
                         "&" + StringUtil.getValueByName(formDetails, "所属品牌") +
-                        "&" + StringUtil.getValueByName(formDetails, "费用归属年份") + StringUtil.getValueByName(formDetails, "费用归属月份") +
                         "&" + serialNumber +
                         "&" + StringUtil.getValueByName(formDetails, "费用大类") +
                         "&" + StringUtil.getValueByName(formDetails, "费用子类") + ("是".equals(prepaidFee) ? "&品牌核销" : "") +
-                        "&" + StringUtil.getValueByName(forms, "备注");
+                        "&" + StringUtil.getValueByName(forms, "备注") +
+                        "&" + StringUtil.getValueByName(formDetails, "费用归属年份") + StringUtil.getValueByName(formDetails, "费用归属月份");
                 j1.setExplanation(explanation);
                 j2.setExplanation(explanation);
                 d1.setExplanation(explanation);
@@ -795,7 +795,8 @@ public class SystemServiceImpl implements SystemService {
                     return StrUtil.format("审批明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(forms));
                 }
                 Voucher whaVoucher = new Voucher().setSerialNumber(serialNumber).setApprovalName("预提申请");
-                whaVoucher.setDate(year + "-" + month + "-" + day);
+//                whaVoucher.setDate(year + "-" + month + "-" + day);
+                whaVoucher.setDate(StringUtil.utcToYear(StringUtil.getValueByName(forms, "入账日期")) + "-" + StringUtil.utcToMonth(StringUtil.getValueByName(forms, "入账日期")) + "-" + StringUtil.utcToDay(StringUtil.getValueByName(forms, "入账日期")));
                 whaVoucher.setVoucherGroupId(VoucherGroupIdEnum.PRE004.getType());
                 List<VoucherDetail> whaVoucherDetails = new ArrayList<>();
                 for (List<ApprovalInstanceForm> whaFormDetails : whaFormListDetails) {
@@ -837,11 +838,11 @@ public class SystemServiceImpl implements SystemService {
                     String whaExplanation = ("暂估成本") +
                             "&" + StringUtil.getValueByName(whaFormDetails, "收款人名字/单位") +
                             "&" + StringUtil.getValueByName(whaFormDetails, "所属品牌") +
-                            "&" + StringUtil.getValueByName(whaFormDetails, "费用归属年份") + StringUtil.getValueByName(whaFormDetails, "费用归属月份") +
                             "&" + serialNumber +
                             "&" + StringUtil.getValueByName(whaFormDetails, "费用大类") +
                             "&" + StringUtil.getValueByName(whaFormDetails, "费用子类") + ("是".equals(whaPrepaidFee) ? "&品牌核销" : "") +
-                            "&" + StringUtil.getValueByName(whaFormDetails, "申请明细");
+                            "&" + StringUtil.getValueByName(whaFormDetails, "申请明细") +
+                            "&" + StringUtil.getValueByName(whaFormDetails, "所属年份") + StringUtil.getValueByName(whaFormDetails, "所属月份");
                     whaj1.setExplanation(whaExplanation);
                     whad1.setExplanation(whaExplanation);
 
@@ -870,7 +871,7 @@ public class SystemServiceImpl implements SystemService {
                 }
                 if (!whaVoucherDetails.isEmpty()) {
                     whaVoucher.setVoucherDetails(whaVoucherDetails);
-                    String save01 = SignUtil.saveVoucher(whaVoucher);
+                    String save01 = SignUtil.saveVoucher(whaVoucher, StringUtil.utcToTimestamp(StringUtil.getValueByName(forms, "入账日期")));
                     if (!"success".equals(save01)) {
                         formAllVoucher = false;
                         resultString += StrUtil.format("预提申请凭证生成错误：【{}】 ", save01);
@@ -885,7 +886,8 @@ public class SystemServiceImpl implements SystemService {
                     return StrUtil.format("审批申请明细列表为空，请检查forms列表: {}", JSONObject.toJSONString(forms));
                 }
                 Voucher raVoucher = new Voucher().setSerialNumber(serialNumber).setApprovalName("退款申请");
-                raVoucher.setDate(year + "-" + month + "-" + day);
+//                raVoucher.setDate(year + "-" + month + "-" + day);
+                raVoucher.setDate(StringUtil.utcToYear(StringUtil.getValueByName(forms, "入账日期")) + "-" + StringUtil.utcToMonth(StringUtil.getValueByName(forms, "入账日期")) + "-" + StringUtil.utcToDay(StringUtil.getValueByName(forms, "入账日期")));
                 raVoucher.setVoucherGroupId(VoucherGroupIdEnum.PRE004.getType());
                 List<VoucherDetail> raVoucherDetails = new ArrayList<>();
 
@@ -936,11 +938,11 @@ public class SystemServiceImpl implements SystemService {
                     String raExplanation = ("暂估成本") +
                             "&" + StringUtil.getValueByName(raFormDetails, "退款公司") +
                             "&" + StringUtil.getValueByName(raFormDetails, "所属品牌") +
-                            "&" + StringUtil.getValueByName(raFormDetails, "所属年份") + StringUtil.getValueByName(raFormDetails, "所属月份") +
                             "&" + serialNumber +
                             "&" + StringUtil.getValueByName(raFormDetails, "费用大类") +
                             "&" + StringUtil.getValueByName(raFormDetails, "费用子类") + ("是".equals(raPrepaidFee) ? "&品牌核销" : "") +
-                            "&" + StringUtil.getValueByName(raFormDetails, "备注");
+                            "&" + StringUtil.getValueByName(raFormDetails, "备注") +
+                            "&" + StringUtil.getValueByName(raFormDetails, "所属年份") + StringUtil.getValueByName(raFormDetails, "所属月份");
                     raj1.setExplanation(raExplanation);
                     rad1.setExplanation(raExplanation);
 
@@ -963,10 +965,10 @@ public class SystemServiceImpl implements SystemService {
                 }
                 raVoucher.setVoucherDetails(raVoucherDetails);
                 if (ArrayUtil.isEmpty(raVoucherDetails)) {
-                    log.error("申请明细列表为空，请检查raVoucherDetails列表: {}", JSONObject.toJSONString(raVoucherDetails));
-                    return StrUtil.format("申请明细列表为空，请检查raVoucherDetails列表: {}", JSONObject.toJSONString(raVoucherDetails));
+                    log.info("申请明细列表为空，请检查raVoucherDetails列表: {}", JSONObject.toJSONString(raVoucherDetails));
+                    return "empty";
                 }
-                String save01 = SignUtil.saveVoucher(raVoucher);
+                String save01 = SignUtil.saveVoucher(raVoucher, StringUtil.utcToTimestamp(StringUtil.getValueByName(forms, "入账日期")));
                 if (!"success".equals(save01)) {
                     formAllVoucher = false;
                     resultString += StrUtil.format("退款申请凭证生成错误：【{}】 ", save01);

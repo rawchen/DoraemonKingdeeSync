@@ -77,6 +77,9 @@ public class BitableController {
         if (BitableTypeEnum.toType(tableId) == BitableTypeEnum.TABLE_ID_INCOME_ESTIMATION) {
             IncomeEstimation baseRecord01 = SignUtil.findBaseRecord(bitableParam, IncomeEstimation.class);
             bitableService.processBitableWriteOff(baseRecord01, bitableParam);
+        } else if (BitableTypeEnum.toType(tableId) == BitableTypeEnum.TABLE_ID_CONSUMPTION_ESTIMATION) {
+            ConsumptionEstimation baseRecord01 = SignUtil.findBaseRecord(bitableParam, ConsumptionEstimation.class);
+            bitableService.processBitableWriteOff(baseRecord01, bitableParam);
         }
     }
 

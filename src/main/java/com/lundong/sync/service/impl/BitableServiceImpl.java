@@ -77,9 +77,9 @@ public class BitableServiceImpl implements BitableService {
 
                 // 构建
                 String explanation = ("收入暂估") +
-                        "&" + incomeEstimation.getYear() + incomeEstimation.getMonth() +
                         "&" + bitableAccountingDimension.getCustomName() +
-                        "&" + incomeEstimation.getDesc();
+                        "&" + incomeEstimation.getDesc() +
+                        "&" + incomeEstimation.getYear() + incomeEstimation.getMonth();
                 j1.setExplanation(explanation);
                 d1.setExplanation(explanation);
                 d2.setExplanation(explanation);
@@ -153,9 +153,9 @@ public class BitableServiceImpl implements BitableService {
 
                 // 构建
                 String explanation = ("千川消耗") +
-                        "&" + year + StringUtil.placeholderTwo(month) +
                         "&" + consumptionEstimation.getSupplierName() +
-                        "&" + StringUtil.subBusinessName(bitableAccountingDimension.getBusinessName());
+                        "&" + StringUtil.subBusinessName(bitableAccountingDimension.getBusinessName()) +
+                        "&" + year + StringUtil.placeholderTwo(month);
                 j1.setExplanation(explanation);
                 j2.setExplanation(explanation);
                 d1.setExplanation(explanation);
@@ -232,9 +232,9 @@ public class BitableServiceImpl implements BitableService {
                 // 构建
                 String explanation = ("摊销") +
                         "&" + otherAmortization.getSupplierName() +
+                        "&" + otherAmortization.getAmortizationItems() +
                         "&" + StringUtil.placeholderTwo(StringUtil.timestampToYearMonthDay(otherAmortization.getCorrespondingAmortizationDate()).get(0)) +
-                        StringUtil.placeholderTwo(StringUtil.timestampToYearMonthDay(otherAmortization.getCorrespondingAmortizationDate()).get(1)) +
-                        "&" + otherAmortization.getAmortizationItems();
+                        StringUtil.placeholderTwo(StringUtil.timestampToYearMonthDay(otherAmortization.getCorrespondingAmortizationDate()).get(1));
                 j1.setExplanation(explanation);
                 d1.setExplanation(explanation);
 
@@ -276,10 +276,10 @@ public class BitableServiceImpl implements BitableService {
                 // 构建
                 String explanation = ("摊销") +
                         "&" + defer.getSupplierName() +
-                        "&" + StringUtil.placeholderTwo(StringUtil.timestampToYearMonthDay(defer.getCorrespondingAmortizationDate()).get(0)) +
-                        StringUtil.placeholderTwo(StringUtil.timestampToYearMonthDay(defer.getCorrespondingAmortizationDate()).get(1)) +
                         "&" + defer.getAmortizationItems() +
-                        "&" + StringUtil.subShopName(defer.getShopName());
+                        "&" + StringUtil.subShopName(defer.getShopName()) +
+                        "&" + StringUtil.placeholderTwo(StringUtil.timestampToYearMonthDay(defer.getCorrespondingAmortizationDate()).get(0)) +
+                        StringUtil.placeholderTwo(StringUtil.timestampToYearMonthDay(defer.getCorrespondingAmortizationDate()).get(1));
                 j1.setExplanation(explanation);
                 d1.setExplanation(explanation);
 
@@ -319,10 +319,10 @@ public class BitableServiceImpl implements BitableService {
                 // 构建
                 String explanation = ("摊销") +
                         "&" + defer.getSupplierName() +
-                        "&" + StringUtil.placeholderTwo(StringUtil.timestampToYearMonthDay(defer.getCorrespondingAmortizationDate()).get(0)) +
-                        StringUtil.placeholderTwo(StringUtil.timestampToYearMonthDay(defer.getCorrespondingAmortizationDate()).get(1)) +
                         "&" + defer.getAmortizationItems() +
-                        "&" + StringUtil.subShopName(defer.getShopName());
+                        "&" + StringUtil.subShopName(defer.getShopName()) +
+                        "&" + StringUtil.placeholderTwo(StringUtil.timestampToYearMonthDay(defer.getCorrespondingAmortizationDate()).get(0)) +
+                        StringUtil.placeholderTwo(StringUtil.timestampToYearMonthDay(defer.getCorrespondingAmortizationDate()).get(1));
                 j1.setExplanation(explanation);
                 d1.setExplanation(explanation);
 
@@ -397,9 +397,9 @@ public class BitableServiceImpl implements BitableService {
 
                 // 构建
                 String explanation = ("冲销收入暂估") +
-                        "&" + incomeEstimation.getYear() + incomeEstimation.getMonth() +
                         "&" + bitableAccountingDimension.getCustomName() +
-                        "&" + incomeEstimation.getDesc();
+                        "&" + incomeEstimation.getDesc() +
+                        "&" + incomeEstimation.getYear() + incomeEstimation.getMonth();
                 j1.setExplanation(explanation);
                 d1.setExplanation(explanation);
                 d2.setExplanation(explanation);
@@ -427,6 +427,89 @@ public class BitableServiceImpl implements BitableService {
 
                 voucher.setVoucherDetails(voucherDetails);
                 SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, incomeEstimation.getWriteOffDate()), bitableParam, StatusFieldEnum.WRITE_OFF.getCode());
+            }
+        } else if (ConsumptionEstimation.class.isAssignableFrom(bitable.getClass())) {
+            // 消耗暂估冲销
+            ConsumptionEstimation consumptionEstimation = (ConsumptionEstimation) bitable;
+            if ("是".equals(consumptionEstimation.getHasGenerate())) {
+                log.info("已生成过该凭证: {}", bitableParam);
+            } else {
+                Voucher voucher = new Voucher().setBitableParam(bitableParam);
+                List<Integer> timeList = StringUtil.timestampToYearMonthDay(consumptionEstimation.getGenerationDate());
+                int year = timeList.get(0);
+                int month = timeList.get(1);
+                int day = timeList.get(2);
+                voucher.setDate(year + "-" + month + "-" + day);
+                voucher.setVoucherGroupId(VoucherGroupIdEnum.PRE004.getType());
+                VoucherDetail j1 = new VoucherDetail();
+                VoucherDetail j2 = new VoucherDetail();
+                VoucherDetail d1 = new VoucherDetail();
+                VoucherDetail d2 = new VoucherDetail();
+
+                List<BrandShopBusiness> accountingDimensionBaseList = Constants.LIST_TABLE_28;
+                List<Bitable> accountMappingBaseList = Constants.LIST_TABLE_29;
+                accountingDimensionBaseList = accountingDimensionBaseList.stream().filter(
+                        n -> consumptionEstimation.getShopCode().equals(n.getShopCode())).collect(Collectors.toList());
+                accountMappingBaseList = accountMappingBaseList.stream().filter(
+                        n -> consumptionEstimation.getConsumptionType().equals(
+                                n.getConsumptionType()) && consumptionEstimation.getCustomerCompanyResponsible().equals(
+                                n.getCustomerCompanyResponsible())).collect(Collectors.toList());
+                BrandShopBusiness bitableAccountingDimension;
+                Bitable bitableAccountMapping;
+                if (ArrayUtil.isEmpty(accountingDimensionBaseList) || accountingDimensionBaseList.size() > 1) {
+                    log.error("存在争议的核算维度映射，请检查参数是否在映射表匹配。店铺编码：{}, bitableParam: {}", consumptionEstimation.getShopCode(), bitableParam);
+                    return;
+                } else {
+                    bitableAccountingDimension = accountingDimensionBaseList.get(0);
+                }
+                if (ArrayUtil.isEmpty(accountMappingBaseList) || accountMappingBaseList.size() > 1) {
+                    log.error("存在争议的科目映射，请检查参数是否在映射表匹配。消耗类型：{}, 客户/公司承担：{}, bitableParam: {}",
+                            consumptionEstimation.getConsumptionType(), consumptionEstimation.getCustomerCompanyResponsible(), bitableParam);
+                    return;
+                } else {
+                    bitableAccountMapping = accountMappingBaseList.get(0);
+                }
+
+                // 构建
+                String explanation = ("冲销消耗暂估") +
+                        "&" + consumptionEstimation.getSupplierName() +
+                        "&" + StringUtil.subBusinessName(bitableAccountingDimension.getBusinessName()) +
+                        "&" + year + StringUtil.placeholderTwo(month);
+                j1.setExplanation(explanation);
+                j2.setExplanation(explanation);
+                d1.setExplanation(explanation);
+                d2.setExplanation(explanation);
+
+                j1.setAmountFor(StringUtil.negate(consumptionEstimation.getAmountIncludingTaxAmount()));
+                j1.setDebit(StringUtil.negate(consumptionEstimation.getAmountIncludingTaxAmount())); // 含税金额
+                d1.setCredit(StringUtil.negate(consumptionEstimation.getAmountIncludingTaxAmount())); // 含税金额
+                j2.setDebit(StringUtil.negate(StringUtil.keepTwoDecimalPlaces(consumptionEstimation.getExcludingTaxAmount()))); // 不含税金额
+                d2.setCredit(StringUtil.negate(StringUtil.keepTwoDecimalPlaces(consumptionEstimation.getExcludingTaxAmount()))); // 不含税金额
+
+                List<VoucherDetail> voucherDetails = new ArrayList<>();
+                // 借贷方科目编码名称维度组装
+                j1.setAccountId(bitableAccountMapping.getDebitAccountCodeOne());
+                String debitAccountingDimensionOne = bitableAccountMapping.getDebitAccountingDimensionOne();
+                VoucherDetail voucherDetailDebitOne = getAccountingDimensionParam(bitableAccountingDimension, j1, debitAccountingDimensionOne, consumptionEstimation.getSupplierCode());
+                voucherDetails.add(voucherDetailDebitOne);
+
+                d1.setAccountId(bitableAccountMapping.getCreditAccountCodeOne());
+                String creditAccountingDimensionOne = bitableAccountMapping.getCreditAccountingDimensionOne();
+                VoucherDetail voucherDetailCreditOne = getAccountingDimensionParam(bitableAccountingDimension, d1, creditAccountingDimensionOne, consumptionEstimation.getSupplierCode());
+                voucherDetails.add(voucherDetailCreditOne);
+
+                j2.setAccountId(bitableAccountMapping.getDebitAccountCodeTwo());
+                String debitAccountingDimensionTwo = bitableAccountMapping.getDebitAccountingDimensionTwo();
+                VoucherDetail voucherDetailDebitTwo = getAccountingDimensionParam(bitableAccountingDimension, j2, debitAccountingDimensionTwo, consumptionEstimation.getSupplierCode());
+                voucherDetails.add(voucherDetailDebitTwo);
+
+                d2.setAccountId(bitableAccountMapping.getCreditAccountCodeTwo());
+                String creditAccountingDimensionTwo = bitableAccountMapping.getCreditAccountingDimensionTwo();
+                VoucherDetail voucherDetailCreditTwo = getAccountingDimensionParam(bitableAccountingDimension, d2, creditAccountingDimensionTwo, consumptionEstimation.getSupplierCode());
+                voucherDetails.add(voucherDetailCreditTwo);
+
+                voucher.setVoucherDetails(voucherDetails);
+                SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, consumptionEstimation.getGenerationDate()), bitableParam, StatusFieldEnum.WRITE_OFF.getCode());
             }
         }
     }

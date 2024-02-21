@@ -60,7 +60,9 @@ public class EventController {
                             // 根据审批实例ID查询审批单
                             ApprovalInstanceFormResult result = StringUtil.instanceToFormList(instanceCode);
                             String save = systemService.processApprovalForm(result, DataTypeEnum.toType(approvalCode).getDesc(), instanceCode, instanceOperateTime);
-                            systemService.insertRecordLog(result, save, instanceOperateTime);
+                            if (save != null && !"empty".equals(save)) {
+                                systemService.insertRecordLog(result, save, instanceOperateTime);
+                            }
                         }
                     };
                     Constants.queue.submitTask(worker);

@@ -152,4 +152,14 @@ class ApplicationTests {
     void t11() {
         System.out.println(SignUtil.getAccessToken(Constants.APP_ID_FEISHU, Constants.APP_SECRET_FEISHU));
     }
+
+    @Test
+    void t12() {
+
+        String s = StringUtil.utcToTimestamp("2024-01-31T00:00:00+08:00");
+        // 13位时间戳转年月日
+        List<Integer> timeList = StringUtil.timestampToYearMonthDay(s);
+        System.out.println(timeList.get(0));
+        System.out.println(timeList.get(1));
+    }
 }
