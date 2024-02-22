@@ -79,6 +79,7 @@ public class BitableServiceImpl implements BitableService {
                 String explanation = ("收入暂估") +
                         "&" + bitableAccountingDimension.getCustomName() +
                         "&" + incomeEstimation.getDesc() +
+                        "&" + incomeEstimation.getIncomeType() +
                         "&" + incomeEstimation.getYear() + incomeEstimation.getMonth();
                 j1.setExplanation(explanation);
                 d1.setExplanation(explanation);
