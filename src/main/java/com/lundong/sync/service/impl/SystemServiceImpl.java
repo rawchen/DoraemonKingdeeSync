@@ -143,7 +143,7 @@ public class SystemServiceImpl implements SystemService {
                     d.setCredit(StringUtil.getValueByName(forms, "金额汇总"));
                     voucherDetails.add(d);
                     voucher.setVoucherDetails(voucherDetails);
-                    String save01 = SignUtil.saveVoucher(voucher);
+                    String save01 = SignUtil.saveVoucher(voucher, instanceOperateTime);
                     if (!"success".equals(save01)) {
                         formAllVoucher = false;
                         resultString += StrUtil.format("付款申请第一张凭证生成错误：【{}】 ", save01);
@@ -260,7 +260,7 @@ public class SystemServiceImpl implements SystemService {
 
                     if (!voucherTwoDetails.isEmpty()) {
                         voucherTwo.setVoucherDetails(voucherTwoDetails);
-                        String save02 = SignUtil.saveVoucher(voucherTwo);
+                        String save02 = SignUtil.saveVoucher(voucherTwo, instanceOperateTime);
                         if (!"success".equals(save02)) {
                             formAllVoucher = false;
                             resultString += StrUtil.format("付款申请第二张凭证生成错误：【{}】 ", save02);
@@ -325,7 +325,7 @@ public class SystemServiceImpl implements SystemService {
                     d.setCredit(StringUtil.getValueByName(forms, "金额汇总"));
                     voucherDetails.add(d);
                     voucher.setVoucherDetails(voucherDetails);
-                    String save01 = SignUtil.saveVoucher(voucher);
+                    String save01 = SignUtil.saveVoucher(voucher, instanceOperateTime);
                     if (!"success".equals(save01)) {
                         formAllVoucher = false;
                         resultString += StrUtil.format("个人报销第一张凭证生成错误：【{}】 ", save01);
@@ -424,7 +424,7 @@ public class SystemServiceImpl implements SystemService {
 
                     if (!voucherTwoDetails.isEmpty()) {
                         voucherTwo.setVoucherDetails(voucherTwoDetails);
-                        String save02 = SignUtil.saveVoucher(voucherTwo);
+                        String save02 = SignUtil.saveVoucher(voucherTwo, SignUtil.saveVoucher(voucherTwo, instanceOperateTime));
                         if (!"success".equals(save02)) {
                             formAllVoucher = false;
                             resultString += StrUtil.format("个人报销第二张凭证生成错误：【{}】 ", save02);
@@ -489,7 +489,7 @@ public class SystemServiceImpl implements SystemService {
                     d.setCredit(StringUtil.getValueByName(forms, "金额汇总"));
                     voucherDetails.add(d);
                     voucher.setVoucherDetails(voucherDetails);
-                    String save01 = SignUtil.saveVoucher(voucher);
+                    String save01 = SignUtil.saveVoucher(voucher, instanceOperateTime);
                     if (!"success".equals(save01)) {
                         formAllVoucher = false;
                         resultString += StrUtil.format("预付申请第一张凭证生成错误：【{}】 ", save01);
@@ -572,7 +572,7 @@ public class SystemServiceImpl implements SystemService {
                     }
                     if (!voucherTwoDetails.isEmpty()) {
                         voucherTwo.setVoucherDetails(voucherTwoDetails);
-                        String save02 = SignUtil.saveVoucher(voucherTwo);
+                        String save02 = SignUtil.saveVoucher(voucherTwo, instanceOperateTime);
                         if (!"success".equals(save02)) {
                             formAllVoucher = false;
                             resultString += StrUtil.format("预付申请第二张凭证生成错误：【{}】 ", save02);
@@ -600,15 +600,21 @@ public class SystemServiceImpl implements SystemService {
                     } else {
                         listTable = Constants.LIST_TABLE_19;
                     }
+
+                    // 2024.03.05需求：返点的，不用导入
+                    if ("媒体返点".equals(StringUtil.getValueByName(formDetails, "收入类别"))) {
+                        continue;
+                    }
+
                     Bitable bitable;
-                    List<Bitable> bitableList = listTable.stream().filter(n -> StringUtil.getValueByName(formDetails, "商品信息/服务信息").equals(n.getGoodServiceInfo())
+                    List<Bitable> bitableList = listTable.stream().filter(n -> StringUtil.getValueByName(formDetails, "收入类别").equals(n.getGoodServiceInfo())
                             && StringUtil.getValueByName(formDetails, "税率(%)").equals(n.getTaxRate())
                     ).collect(Collectors.toList());
                     if (ArrayUtil.isEmpty(bitableList) || bitableList.size() > 1) {
-                        log.error("存在争议的科目编码，请检查参数是否在映射表匹配。商品信息/服务信息：{} 税率：{}，审批名称：{} 飞书流程号：{}",
-                                StringUtil.getValueByName(formDetails, "商品信息/服务信息"), StringUtil.getValueByName(formDetails, "税率(%)"), voucher.getApprovalName(), voucher.getSerialNumber());
-                        return StrUtil.format("存在争议的科目编码，请检查参数是否在映射表匹配。商品信息/服务信息：{} 税率：{}，审批名称：{} 飞书流程号：{}",
-                                StringUtil.getValueByName(formDetails, "商品信息/服务信息"), StringUtil.getValueByName(formDetails, "税率(%)"), voucher.getApprovalName(), voucher.getSerialNumber());
+                        log.error("存在争议的科目编码，请检查参数是否在映射表匹配。收入类别：{} 税率：{}，审批名称：{} 飞书流程号：{}",
+                                StringUtil.getValueByName(formDetails, "收入类别"), StringUtil.getValueByName(formDetails, "税率(%)"), voucher.getApprovalName(), voucher.getSerialNumber());
+                        return StrUtil.format("存在争议的科目编码，请检查参数是否在映射表匹配。收入类别：{} 税率：{}，审批名称：{} 飞书流程号：{}",
+                                StringUtil.getValueByName(formDetails, "收入类别"), StringUtil.getValueByName(formDetails, "税率(%)"), voucher.getApprovalName(), voucher.getSerialNumber());
                     } else {
                         bitable = bitableList.get(0);
                         String summary = bitable.getSummary();
@@ -623,7 +629,7 @@ public class SystemServiceImpl implements SystemService {
                     String explanation = ("收入确认") +
                             "&" + StringUtil.getValueByName(forms, "开票公司") +
                             "&" + StringUtil.getValueByName(forms, "所属品牌") +
-                            "&" + StringUtil.getValueByName(formDetails, "商品信息/服务信息") +
+                            "&" + StringUtil.getValueByName(formDetails, "收入类别") +
                             "&" + serialNumber +
                             "&" + StringUtil.getValueByName(formDetails, "归属年份") + StringUtil.getValueByName(formDetails, "归属月份");
                     j1.setExplanation(explanation);
@@ -662,7 +668,7 @@ public class SystemServiceImpl implements SystemService {
                 }
                 if (!voucherDetails.isEmpty()) {
                     voucher.setVoucherDetails(voucherDetails);
-                    String save = SignUtil.saveVoucher(voucher);
+                    String save = SignUtil.saveVoucher(voucher, instanceOperateTime);
                     if (!"success".equals(save)) {
                         formAllVoucher = false;
                         resultString += StrUtil.format("开票申请凭证生成错误：【{}】 ", save);
@@ -781,7 +787,7 @@ public class SystemServiceImpl implements SystemService {
                 VoucherDetail voucherDetailCreditOne = getAccountingDimensionParam(invoiceWriteOffForms, null, formDetails, d1, creditAccountingDimensionOne);
                 voucherInvoiceWriteOffVoucherDetails.add(voucherDetailCreditOne);
                 voucherInvoiceWriteOff.setVoucherDetails(voucherInvoiceWriteOffVoucherDetails);
-                String save = SignUtil.saveVoucher(voucherInvoiceWriteOff);
+                String save = SignUtil.saveVoucher(voucherInvoiceWriteOff, instanceOperateTime);
                 if (!"success".equals(save)) {
                     formAllVoucher = false;
                     resultString += StrUtil.format("发票核销凭证生成错误：【{}】 ", save);
