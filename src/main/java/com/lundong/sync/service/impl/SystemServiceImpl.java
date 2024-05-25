@@ -424,7 +424,7 @@ public class SystemServiceImpl implements SystemService {
 
                     if (!voucherTwoDetails.isEmpty()) {
                         voucherTwo.setVoucherDetails(voucherTwoDetails);
-                        String save02 = SignUtil.saveVoucher(voucherTwo, SignUtil.saveVoucher(voucherTwo, instanceOperateTime));
+                        String save02 = SignUtil.saveVoucher(voucherTwo, instanceOperateTime);
                         if (!"success".equals(save02)) {
                             formAllVoucher = false;
                             resultString += StrUtil.format("个人报销第二张凭证生成错误：【{}】 ", save02);

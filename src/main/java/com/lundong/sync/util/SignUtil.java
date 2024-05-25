@@ -473,6 +473,8 @@ public class SignUtil {
         for (VoucherDetail voucherDetail : voucher.getVoucherDetails()) {
             log.info("入账凭证对象: {}", voucherDetail.toString());
         }
+        List<HttpCookie> httpCookiesTemp = loginCookies();
+        CookieUtils.clearKingdeeCookie(httpCookiesTemp);
         List<HttpCookie> httpCookies = loginCookies();
         if (httpCookies == null) {
             return "金蝶系统登录失败";

@@ -400,6 +400,7 @@ public class BitableServiceImpl implements BitableService {
                 String explanation = ("冲销收入暂估") +
                         "&" + bitableAccountingDimension.getCustomName() +
                         "&" + incomeEstimation.getDesc() +
+                        "&" + incomeEstimation.getIncomeType() +
                         "&" + incomeEstimation.getYear() + incomeEstimation.getMonth();
                 j1.setExplanation(explanation);
                 d1.setExplanation(explanation);
@@ -432,11 +433,11 @@ public class BitableServiceImpl implements BitableService {
         } else if (ConsumptionEstimation.class.isAssignableFrom(bitable.getClass())) {
             // 消耗暂估冲销
             ConsumptionEstimation consumptionEstimation = (ConsumptionEstimation) bitable;
-            if ("是".equals(consumptionEstimation.getHasGenerate())) {
+            if ("是".equals(consumptionEstimation.getHasWriteOff())) {
                 log.info("已生成过该凭证: {}", bitableParam);
             } else {
                 Voucher voucher = new Voucher().setBitableParam(bitableParam);
-                List<Integer> timeList = StringUtil.timestampToYearMonthDay(consumptionEstimation.getGenerationDate());
+                List<Integer> timeList = StringUtil.timestampToYearMonthDay(consumptionEstimation.getWriteOffDate());
                 int year = timeList.get(0);
                 int month = timeList.get(1);
                 int day = timeList.get(2);
@@ -472,10 +473,11 @@ public class BitableServiceImpl implements BitableService {
                 }
 
                 // 构建
+                List<Integer> timeListGen = StringUtil.timestampToYearMonthDay(consumptionEstimation.getGenerationDate());
                 String explanation = ("冲销消耗暂估") +
                         "&" + consumptionEstimation.getSupplierName() +
                         "&" + StringUtil.subBusinessName(bitableAccountingDimension.getBusinessName()) +
-                        "&" + year + StringUtil.placeholderTwo(month);
+                        "&" + timeListGen.get(0) + StringUtil.placeholderTwo(timeList.get(1));
                 j1.setExplanation(explanation);
                 j2.setExplanation(explanation);
                 d1.setExplanation(explanation);
@@ -510,7 +512,7 @@ public class BitableServiceImpl implements BitableService {
                 voucherDetails.add(voucherDetailCreditTwo);
 
                 voucher.setVoucherDetails(voucherDetails);
-                SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, consumptionEstimation.getGenerationDate()), bitableParam, StatusFieldEnum.WRITE_OFF.getCode());
+                SignUtil.updateHasGenerate(SignUtil.saveVoucher(voucher, consumptionEstimation.getWriteOffDate()), bitableParam, StatusFieldEnum.WRITE_OFF.getCode());
             }
         }
     }

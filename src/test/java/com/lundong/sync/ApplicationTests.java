@@ -12,6 +12,7 @@ import com.lundong.sync.entity.kingdee.Voucher;
 import com.lundong.sync.entity.kingdee.VoucherDetail;
 import com.lundong.sync.enums.StatusFieldEnum;
 import com.lundong.sync.service.SystemService;
+import com.lundong.sync.util.CookieUtils;
 import com.lundong.sync.util.SignUtil;
 import com.lundong.sync.util.StringUtil;
 import org.junit.jupiter.api.Test;
@@ -70,10 +71,34 @@ class ApplicationTests {
 
     @Test
     void t03() {
-        List<HttpCookie> httpCookies = SignUtil.loginCookies();
-        for (HttpCookie httpCookie : httpCookies) {
-            System.out.println(httpCookie);
+
+        for (int i = 0; i < 300; i++) {
+//            System.out.println(i);
+
+            List<HttpCookie> httpCookiesTemp = SignUtil.loginCookies();
+            CookieUtils.clearKingdeeCookie(httpCookiesTemp);
+            List<HttpCookie> httpCookies =SignUtil.loginCookies();
+            for (HttpCookie httpCookie : httpCookies) {
+                System.out.println(httpCookie);
+//                System.out.println(httpCookie.getMaxAge());
+            }
         }
+//        for (HttpCookie httpCookie : httpCookies) {
+//            System.out.println(httpCookie);
+//        }
+
+
+
+//        List<HttpCookie> httpCookies2 = SignUtil.loginCookies();
+//        for (HttpCookie httpCookie : httpCookies2) {
+//            System.out.println(httpCookie);
+//        }
+//
+//        List<HttpCookie> httpCookies3 = SignUtil.loginCookies();
+//        for (HttpCookie httpCookie : httpCookies3) {
+//            System.out.println(httpCookie);
+//        }
+
     }
 
     @Test
